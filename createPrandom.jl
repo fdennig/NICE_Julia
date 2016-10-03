@@ -34,7 +34,7 @@
 using HDF5, JLD
 
 if user == "francis"
-  folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/"
+  folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
 elseif user == "joshua"
   folder = "/Users/joshuabernstein/Dropbox"
 elseif user == "marc"
@@ -42,9 +42,8 @@ elseif user == "marc"
 else error("wrong user")
 end
 
-dparam_i = load("$folder/NICE Julia/Data/dparam_i.jld")
+dparam_i = load("$folder/NICE_Julia/Data/dparam_i.jld")
 # to call parameter values, use the syntax variable = dparam_i["variable"][2], except for q and tol where the '[2]' should be dropped
-
 # First, get means and standard deviations for random draws.
 # M for mean, sd for standard deviation
 # sd small or large
@@ -62,7 +61,7 @@ if sd == "small"
   TrM12M = dparam_i["TrM"][2][1,2]/100
   TrM12sd = 0.01079
   # Climate sensitivity
-  xi1M = 3.8 # hardcoded originally
+  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
   xi1sd = 0.3912
   # Coefficient on T^7 in damage function
   psi7M = 0.082 # hardcoded originally
@@ -83,7 +82,7 @@ elseif sd == "large" # 10 times larger than "small"
   TrM12M = dparam_i["TrM"][2][1,2]/100
   TrM12sd = 10*0.01079
   # Climate sensitivity
-  xi1M = 3.8 # hardcoded originally
+  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
   xi1sd = 10*0.3912
   # Coefficient on T^7 in damage function
   psi7M = 0.082 # hardcoded originally
@@ -340,7 +339,7 @@ DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,2
 # Load the certainPARAMETERS.mat file
 using HDF5, JLD
 # certainPARAMETERS = load("/Users/francis/Dropbox/ARBEIT/RESEARCH/rice/rice_for_simon/Julia/Data/certainPARAMETERS.jld") # Adjust for User: FRANCIS
-certainPARAMETERS = load("$folder/RICE_for_Simon/Julia/Data/certainPARAMETERS.jld") # Adjust for User: JOSHUA
+certainPARAMETERS = load("$folder/NICE_Julia/Data/certainPARAMETERS.jld") # Adjust for User: JOSHUA
 
 # to call parameter values, use the syntax 'variable = certainPARAMETERS["variable"][2]'
 
@@ -451,13 +450,13 @@ EL = landuse(EL0,delL)
 # Temperature forcing and temperature flow parameters, xi (nsample of them!)
 # requires following certain parameters
 # xi2 - 6 right elements of the vector
-xi2 = certainPARAMETERS["xi2"][2]
+xi2 = certainPARAMETERS["xi"][2]
 
 # requires the random parameter xi1 (climate sensitivity)
 xi1 = DEEPrandP.xi1
 
 # build
-xi = [xi1 repmat(xi2,nsample)]
+xi = [repmat(xi2[:,1:2],nsample) xi1 repmat(xi2[:,4:7],nsample)]
 
 # Transition matrix for temperature flow, TrT - there are nsample of them!
 # function of xi
@@ -577,6 +576,3 @@ end
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
