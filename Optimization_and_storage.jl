@@ -103,7 +103,7 @@ ftol_rel!(opt,0.00000000000005)
 
 # Extract the two tax vectors from the optimization object
 taxes_1 = tax_vector[1:tm]
-taxes_2 = [tax_vector[1:lm],tax_vector[tm+1:end]]
+taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
 
 # Create storage objects
 c = Array(Float64, Tm, 12, 5, nsample)
@@ -119,7 +119,7 @@ Y = Array(Float64, Tm, 12, nsample)
 Q = Array(Float64, Tm, 12, nsample)
 
 # Store data
-for i = 1:nsample/2
+for i = 1:convert(Int,nsample/2)
   c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
   K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
@@ -132,7 +132,7 @@ for i = 1:nsample/2
   Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
 end
-for i = (nsample/2 + 1):nsample
+for i = convert(Int,(nsample/2 + 1)):nsample
   c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
   K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
@@ -219,7 +219,7 @@ ftol_rel!(opt,0.00000000000005)
 
 # Extract the two tax vectors from the optimization object
 taxes_1 = tax_vector[1:tm]
-taxes_2 = [tax_vector[1:lm],tax_vector[tm+1:end]]
+taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
 
 # # Create storage objects
 # c = Array(Float64, Tm, 12, 5, nsample)
@@ -235,7 +235,7 @@ taxes_2 = [tax_vector[1:lm],tax_vector[tm+1:end]]
 # Q = Array(Float64, Tm, 12, nsample)
 
 # Store data
-for i = 1:nsample/2
+for i = 1:convert(Int, nsample/2)
   c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
   K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
@@ -248,7 +248,7 @@ for i = 1:nsample/2
   Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
 end
-for i = (nsample/2 + 1):nsample
+for i = convert(Int,(nsample/2 + 1)):nsample
   c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
   K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
@@ -318,7 +318,7 @@ taxes_1 = tax_vector[1:tm]
 # Q = Array(Float64, Tm, 12, nsample)
 
 # Store data
-for i = 1:nsample/2
+for i = 1:convert(Int, nsample/2)
   c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
   K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
@@ -331,7 +331,7 @@ for i = 1:nsample/2
   Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
 end
-for i = (nsample/2 + 1):nsample
+for i = convert(Int,(nsample/2 + 1)):nsample
   c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
   K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
@@ -351,5 +351,5 @@ S_tm = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_w
 SS = Array(Results,3)
 SS = [S_0 S_4 S_tm]
 
-using JLD
-save("$folder/NICE_Julia/Outputs/SS_$filenm.jld", "SS", SS)
+# using JLD
+# save("$folder/NICE_Julia/Outputs/SS_$filenm.jld", "SS", SS)
