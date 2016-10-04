@@ -5,7 +5,10 @@
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ######################################################################################################################################################
-
+sd = "small"
+user = "francis"
+regime_select = 2
+backstop_same = "Y"
 # After running that, we can begin this file...
 
 ######################################################################################################################################################
@@ -153,7 +156,7 @@ elseif regime_select == 2
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
 
   # Initial TFP growth rate (12, by region) - gy0 - plus/minus 3 sd
-  z[:,1:12] = [gy0M' + gy0sd'.*3,gy0M' - gy0sd'.*3]
+  z[:,1:12] = [gy0M' + gy0sd'.*3; gy0M' - gy0sd'.*3]
 
 elseif regime_select == 3
   # define preset regime: High initial decarbonization rate vs. Low initial decarbonization rate
@@ -162,7 +165,7 @@ elseif regime_select == 3
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
 
   # Initial decarbonization rate (12) - sighisT - plus/minus 3 sd
-  z[:,13:24] = [sighisTM' + sighisTsd'.*3,sighisTM' - sighisTsd'.*3]
+  z[:,13:24] = [sighisTM' + sighisTsd'.*3; sighisTM' - sighisTsd'.*3]
 
 elseif regime_select == 4
   # define preset regime: High elasticity of income wrt damage vs. Low elasticity of income wrt damage
@@ -180,7 +183,7 @@ elseif regime_select == 5
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
 
   # Climate sensitivity - xi1 - plus/minus 3 sd
-  z[:,26] = [xi1M + xi1sd*3,xi1M - xi1sd*3]
+  z[:,26] = [xi1M + xi1sd*3; xi1M - xi1sd*3]
 
 elseif regime_select == 6
   # define preset regime: High atmosphere to upper ocean transfer coefficient vs. Low atmosphere to upper ocean transfer coefficient
@@ -189,7 +192,7 @@ elseif regime_select == 6
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
 
   # Atmosphere to upper ocean transfer coefficient - plus/minus 3 sd
-  z[:,25] = [TrM12M + TrM12sd*3,TrM12M - TrM12sd*3]
+  z[:,25] = [TrM12M + TrM12sd*3; TrM12M - TrM12sd*3]
 
 elseif regime_select == 7
   # define preset regime: High initial world backstop price vs. Low initial world backstop price
@@ -198,7 +201,7 @@ elseif regime_select == 7
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
 
   # Initial world backstop price - pw - plus/minus 3 sd
-  z[:,28] = [pwM + pwsd*3,pwM - pwsd*3]./1000
+  z[:,28] = [pwM + pwsd*3; pwM - pwsd*3]./1000
 
 elseif regime_select == 8
   # define preset regime: High T7 coefficient vs. Low T7 coefficient
@@ -207,7 +210,7 @@ elseif regime_select == 8
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
 
   # T7 coefficient - psi7 - plus 3sd/0
-  z[:,27] = [0.318,0] # HARDCODING REPLACES: [psi7M + psi7sd*6,max(psi7M - psi7sd*3,0)]
+  z[:,27] = [0.318; 0] # HARDCODING REPLACES: [psi7M + psi7sd*6,max(psi7M - psi7sd*3,0)]
 
 elseif regime_select == 9
   # define preset regime: Deciles of TFP (all else fixed at means)
@@ -566,12 +569,12 @@ end
 PP = Array(PP_,nsample)
 
 for i=1:nsample
-  PP[i] = PP_(para,squeeze(L[i,:,:],1)',squeeze(tfp[i,:,:],1)',squeeze(sigma[i,:,:],1)',squeeze(th1[i,:,:],1)',th2,squeeze(pb[i,:,:],1)',EL',Fex,squeeze(TrM[i,:,:],1),squeeze(xi[i,:],1)',squeeze(TrT[i,:,:],1),squeeze(psi[i,:,:],1),T0,T1,M0,M1,K0,R,q,squeeze(d[i,:,:],1),tol)
+  PP[i] = PP_(para,L[i,:,:]',tfp[i,:,:]',sigma[i,:,:]',th1[i,:,:]',th2,pb[i,:,:]',EL',Fex,TrM[i,:,:],xi[i,:]',TrT[i,:,:],psi[i,:,:],T0,T1,M0,M1,K0,R,q,d[i,:,:],tol)
   # note the transposes so that the relevant matrices are now in TxI format for easy transfer to following functions/code
 end
 
 # So calling PP[i]."variable" will call the relevant variable array/scalar for the ith random draw
-
+regime_select
 # END OF SECTION
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

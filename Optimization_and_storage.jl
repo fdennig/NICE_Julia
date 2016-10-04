@@ -4,7 +4,7 @@
 # Preliminaries
 
 # Set user name to run auxiliary files
-user = "joshua" # or "francis" or "marc" as the case may be
+user = "francis" # or "francis" or "marc" as the case may be
 
 # Select the regime for parameter randomization
 regime_select = 2
@@ -29,8 +29,8 @@ regime_select = 2
 
 # Define exogenous parameters
 
-Tm = 32 # Time period we want to consider, Tm <= 60
-tm = int(15) # (must be an integer) length of the tax vector we want to consider - THIS WILL DIFFER FROM THE DIMENSION OF THE ACTUAL TAX VECTOR OBJECT, tax_length!
+Tm::Int = 32 # Time period we want to consider, Tm <= 60
+tm::Int = round(15) # (must be an integer) length of the tax vector we want to consider - THIS WILL DIFFER FROM THE DIMENSION OF THE ACTUAL TAX VECTOR OBJECT, tax_length!
   # note that the tax vector contains 2 sets of taxes -
   # the first lm elements are common to both sets, the remainder of the vector is then split in two, one for each set of taxes (must of equal length, (tm - lm)/2)
 
@@ -47,7 +47,7 @@ nu = 2 # risk aversion parameter (applied over random draws)
 
 # Set directory based on User
 if user == "francis"
-  folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/"
+  folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
 elseif user == "joshua"
   folder = "/Users/joshuabernstein/Dropbox"
 elseif user == "marc"
@@ -56,20 +56,20 @@ else error("wrong user")
 end
 
 # Run Function Definitions File
-include("$folder/NICE Julia/Codes for uncertainty/Function_definitions.jl")
+include("$folder/NICE_Julia/Function_definitions.jl")
 
 # 3. Run Function_defitions_for_createPrandom_and_parameters2consumption.jl AND createPrandom_and_parameters2consumption.jl first to build necessary parameters!
-include("$folder/NICE Julia/Codes for uncertainty/createPrandom.jl") # quick way to run this!
+include("$folder/NICE Julia/createPrandom.jl") # quick way to run this!
 
 # Optimization of welfare function using NLopt package
 using NLopt
 idims = max(nsample/2,1) # bifurcates the random draws into two subsets
 
 # 1. lm = 0
-lm = 0
-tax_length = int(2*tm - lm)
+lm::Int = 0
+tax_length::Int = round(2*tm - lm)
 
-count = 0 # keep track of number of iterations
+count::Int = 0 # keep track of number of iterations
 
 # Define function to be maximized (requires special format for NLopt package)
 
@@ -182,8 +182,8 @@ S_0 = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_we
 filenm = string(regime_select)
 
 # 2. lm = 4
-lm = 4
-tax_length = int(2*tm - lm)
+lm::Int = 4
+tax_length::Int = round(2*tm - lm)
 
 count = 0 # keep track of number of iterations
 
@@ -266,8 +266,8 @@ end
 S_4 = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
 
 # 3. lm = tm
-lm = tm
-tax_length = int(2*tm - lm)
+lm::Int = tm
+tax_length::Int = round(2*tm - lm)
 
 count = 0 # keep track of number of iterations
 
@@ -352,5 +352,4 @@ SS = Array(Results,3)
 SS = [S_0 S_4 S_tm]
 
 using JLD
-save("$folder/NICE Julia/Outputs/SS_$filenm.jld", "SS", SS)
-
+save("$folder/NICE_Julia/Outputs/SS_$filenm.jld", "SS", SS)

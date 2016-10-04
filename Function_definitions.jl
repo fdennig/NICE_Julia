@@ -3,7 +3,7 @@
 function backstop(Th,RL,pw,du,dd,tau)
   T = 60
   I = 12
-  taut = (tau-1995)/10
+  taut = convert(Int,(tau-1995)/10)
   p0 = pw.*RL
   pb = zeros(nsample,I,T) # note order of dimensions!
   pb[:,:,1] = p0
@@ -23,7 +23,7 @@ function sig(gT,delsig,sighisT,adj15,Y0,E0)
   E000 = E0/1000
   sigma[:,:,1] = repmat(E000./Y0,nsample)
   sigma[:,:,2] = broadcast(*,broadcast(*,sigma[:,:,1],exp(sighisT*10)),adj15)
-  compdelsig = ((1.-broadcast(.^,1-delsig,[2:T])')./delsig).-1 # creates all the compounding of delsig broadcast(.^,1-delsig,[2:T])'
+  compdelsig = ((1.-broadcast(.^,1-delsig,2:T)')./delsig).-1 # creates all the compounding of delsig broadcast(.^,1-delsig,[2:T])'
   for t = 3:T
     G_ = exp((ones(nsample,I)*(t-2)*gT + (sighisT.-gT)*compdelsig[1,t-2])*10) #sum(compdelsig[1:t-1]))*10)
     sigma[:,:,t] = sigma[:,:,2].*G_
@@ -40,7 +40,7 @@ function population(Pop0,poprates)
   L = zeros(nsample,I,T) # note order of dimensions
   L[:,:,1] = repmat(Pop0,nsample)
   for t = 2:31
-    L[:,:,t] = L[:,:,t-1].*exp(repmat(poprates[t-1,:]*10,nsample))
+    L[:,:,t] = L[:,:,t-1].*exp(repmat(poprates[t-1,:]'*10,nsample))
   end
   for t = 32:T
     L[:,:,t] = L[:,:,31]
@@ -51,7 +51,7 @@ end
 function forcingEx(Fex2000,Fex2100)
   T = 60
   Fex = zeros(1,T)
-  Fex = Fex2000*ones(1,T) + 0.1*[0:T-1]'*(Fex2100-Fex2000)
+  Fex = Fex2000*ones(1,T) + 0.1*(0:T-1)'*(Fex2100-Fex2000)
   for t = 12:T
     Fex[t] = 0.3
   end
@@ -64,18 +64,18 @@ function tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0)
   tfp = zeros(nsample,I,T) # note order of dimensions
   tfp[:,:,1] = repmat(A0,nsample)
   tfp[:,:,2] = broadcast(*,tfp[:,:,1],exp(10*(1-gamma)*gy0))
-  compdelA = repmat(exp(-delA*[1:(T-2)]'),nsample) # creates all the compounded delA values
+  compdelA = repmat(exp(-delA*(1:(T-2))'),nsample) # creates all the compounded delA values
   gtUS = (1-gamma)*(tgl*ones(nsample,T-2) + (repmat(gy0[:,1],1,(T-2)) - tgl*ones(nsample,T-2)).*compdelA) # growth rates in US, periods 3 to 60
   cgtus = cumsum(gtUS,2)
   tfp[:,1,3:T] = tfp[:,1,2].*exp(cgtus.*10) # USA is correct
   fac = zeros(nsample,I-1)
   for i = 1:nsample
-    fac[i,:] = log(y0[1]./y0[2:I]') + log(Cratio) + 10*(gy0[i,1].-gy0[i,2:I])
+    fac[i,:] = log(y0[1]./y0[2:I]') + log(Cratio) + 10*(gy0[i,1].-gy0[i,2:I])'
   end
-  k = (1-Crate).^[0:T-3]'
+  k = (1-Crate).^(0:T-3)'
   kR = zeros(nsample,I-1,T-2)
   for i = 1:nsample
-    kR[i,:,:] = Crate*(1-gamma)*0.1*(fac[i,:]'*k)
+    kR[i,:,:] = Crate*(1-gamma)*0.1*(fac[i,:]''*k)
   end
   gtUS_ = permutedims(cat(3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2]) # adds third dimension to gtUS (manual at the moment since I-1 = 11 is fixed)
   gtR = gtUS_ + kR
@@ -86,7 +86,7 @@ end
 
 function landuse(EL0,delL)
   T = 60
-  EL = EL0'.*(1-delL).^[0:T-1]'
+  EL = EL0'.*(1-delL).^(0:T-1)'
   return EL
 end
 
@@ -137,9 +137,9 @@ function fromtax(tax,P,Tm)
 	#savings and tax
 	s1 = P.para[4]/(1+P.para[1])^10
 	S = ones(Tm,12).*s1
-	TAX = maximum(P.pb,2)
-	TAX[1] = 0
-	TAX[2:(length(tax)+1)] = tax
+	TAX = [0; tax; maximum(P.pb,2)[(length(tax)+2):end]]
+	# TAX[1] = 0
+	# TAX[2:length(tax)+1] = tax
 	#mitition rate, abatement cost, damage, deflator
 	mu = Array(Float64, Tm, 12)
 	lam = Array(Float64, Tm, 12)
@@ -165,7 +165,7 @@ function fromtax(tax,P,Tm)
 	Y[2, :] = P.A[2,:].*P.L[2,:].^(1-P.para[4]).*K[2,:].^P.para[4]
 	mu[2, :] =  max(min((TAX[2]./P.pb[2,:]).^(1/(P.th2-1)),1),0)
 	E[2, :] = (1 - mu[2, :]).*P.sigma[2, :].*Y[2, :]
-	M[3, :] = Mflow(M[2,:], sum(E[2, :] + P.EL[2, :]), P.TrM)
+	M[3, :] = Mflow(M[2,:]', sum(E[2, :] + P.EL[2, :]), P.TrM)
 	lam[2, :] = max(min(P.th1[2, :].*mu[2, :].^P.th2,1),0)
 	D[2, :] = damage(T[2, 1], P.psi)
 	AD[2, :] = (1-lam[2, :])./(1+D[2, :])
@@ -182,9 +182,9 @@ function fromtax(tax,P,Tm)
 		mu[t, :] =  max(min((TAX[t]./P.pb[t,:]).^(1/(P.th2-1)),1),0)
 		lam[t, :] = max(min(P.th1[t, :].*mu[t, :].^P.th2,1),0)
 		E[t, :] = (1 - mu[t, :]).*P.sigma[t, :].*Y[t, :]
-		M[t+1, :] = Mflow(M[t,:], sum(E[t, :] + P.EL[t, :]), P.TrM)
+		M[t+1, :] = Mflow(M[t,:]', sum(E[t, :] + P.EL[t, :]), P.TrM)
 		Mbar = (M[t+1, 1] +M[t, 1])/2
-		T[t, :] = tempforcing(Mbar, P.Fex[t], P.xi, P.TrT, T[t-1, :])
+		T[t, :] = tempforcing(Mbar, P.Fex[t], P.xi, P.TrT, T[t-1, :]')
 		D[t, :] = damage(T[t, 1], P.psi)
 		AD[t, :] = (1-lam[t, :])./(1+D[t, :])
 		Q[t, :] = AD[t, :].*Y[t, :]
@@ -198,7 +198,7 @@ function fromtax(tax,P,Tm)
   Y[Tm, :] = P.A[Tm,:].*P.L[Tm,:].^(1-P.para[4]).*K[Tm,:].^P.para[4]
 	mu[Tm, :] =  max(min((TAX[Tm]./P.pb[Tm,:]).^(1/(P.th2-1)),1),0)
 	lam[Tm, :] = max(min(P.th1[Tm, :].*mu[Tm, :].^P.th2,1),0)
-	T[Tm, :] = tempforcing(M[Tm, 1], P.Fex[Tm], P.xi, P.TrT, T[Tm-1, :])
+	T[Tm, :] = tempforcing(M[Tm, 1], P.Fex[Tm], P.xi, P.TrT, T[Tm-1, :]')
 	D[Tm, :] = damage(T[Tm, 1], P.psi)
 	AD[Tm, :] = (1-lam[Tm, :])./(1+D[Tm, :])
 	Q[Tm, :] = AD[Tm, :].*Y[Tm, :]
@@ -263,4 +263,3 @@ function welfare2c_bar(W, L, rho, eta, nu, Tm)
   cbar = (((1-nu)*W)^(1/(1-nu)))/((D)^(1-eta))
   return cbar
 end
-
