@@ -137,9 +137,10 @@ function fromtax(tax,P,Tm)
 	#savings and tax
 	s1 = P.para[4]/(1+P.para[1])^10
 	S = ones(Tm,12).*s1
-	TAX = [0; tax; maximum(P.pb,2)[(length(tax)+2):end]]
-	# TAX[1] = 0
-	# TAX[2:length(tax)+1] = tax
+  # TAX =  [0; tax; maximum(P.pb,2)[(length(tax)+2):end]]
+  TAX = maximum(P.pb,2)
+	TAX[1] = 0
+	TAX[2:length(tax)+1] = tax
 	#mitition rate, abatement cost, damage, deflator
 	mu = Array(Float64, Tm, 12)
 	lam = Array(Float64, Tm, 12)
@@ -210,7 +211,7 @@ function fromtax(tax,P,Tm)
 end
 
 function welfare(c, L, rho, eta, Tm)
-	R = 1./(1+rho).^(10.*[0:(Tm-1)])
+	R = 1./(1+rho).^(10.*(0:(Tm-1)))
 	A = Array(Float64, Tm, 12, 5)
 	for i = 1:5
 		A[:,:,i] = 0.2*L[1:Tm,:].*c[:,:,i].^(1-eta)
@@ -232,9 +233,9 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims)
       c[:,:,:,i] = fromtax(tax[1:tm],P[i],Tm)[1] # only consider tm length since we want to create a tax vector of particular length
   end
   for i = idims+1:length(P) # NB length(P) = nsample
-      c[:,:,:,i] = fromtax([tax[1:lm],tax[tm+1:end]],P[i],Tm)[1]
+      c[:,:,:,i] = fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[1]
   end
-  R = 1./(1+rho).^(10.*[0:(Tm-1)]) # discount factors for each time period
+  R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
   D = zeros(Tm,12,5,nsample)
   # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
   for t = 1:Tm
@@ -258,7 +259,7 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims)
 end
 
 function welfare2c_bar(W, L, rho, eta, nu, Tm)
-  R = 1./(1+rho).^(10.*[0:(Tm-1)]) # discount factors for each time period
+  R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
   D = sum(R.*L)
   cbar = (((1-nu)*W)^(1/(1-nu)))/((D)^(1-eta))
   return cbar
