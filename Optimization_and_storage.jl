@@ -5,7 +5,7 @@
 
 # Set user name to run auxiliary files
 user = "francis" # or "francis" or "marc" as the case may be
-
+sd="small"
 # Select the regime for parameter randomization
 regime_select = 2
   # 0 = no randomization (just uses means)
@@ -29,8 +29,9 @@ regime_select = 2
 
 # Define exogenous parameters
 
-Tm::Int = 32 # Time period we want to consider, Tm <= 60
-tm::Int = round(15) # (must be an integer) length of the tax vector we want to consider - THIS WILL DIFFER FROM THE DIMENSION OF THE ACTUAL TAX VECTOR OBJECT, tax_length!
+Tm = 32
+# Time period we want to consider, Tm <= 60
+tm = 15 # (must be an integer) length of the tax vector we want to consider - THIS WILL DIFFER FROM THE DIMENSION OF THE ACTUAL TAX VECTOR OBJECT, tax_length!
   # note that the tax vector contains 2 sets of taxes -
   # the first lm elements are common to both sets, the remainder of the vector is then split in two, one for each set of taxes (must of equal length, (tm - lm)/2)
 
@@ -41,35 +42,35 @@ eta = 1.5 # PP[1].para[3] # inequality aversion/time smoothing parameter (applie
 nu = 2 # risk aversion parameter (applied over random draws)
 
 # Now execute the whole code: select all and evaluate
-
+typeof(nu)
 ###########################################################################################################################################################################################################
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# Set directory based on User
 if user == "francis"
   folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
 elseif user == "joshua"
   folder = "/Users/joshuabernstein/Dropbox"
 elseif user == "marc"
-  folder = "\Users\mfleur\Dropbox\RICE_for_Simon (1)\Julia"
+  folder = "/Users/mfleur/Dropbox/RICE_for_Simon (1)/Julia"
 else error("wrong user")
 end
+
 
 # Run Function Definitions File
 include("$folder/NICE_Julia/Function_definitions.jl")
 
 # 3. Run Function_defitions_for_createPrandom_and_parameters2consumption.jl AND createPrandom_and_parameters2consumption.jl first to build necessary parameters!
-include("$folder/NICE Julia/createPrandom.jl") # quick way to run this!
+include("$folder/NICE_Julia/createPrandom.jl") # quick way to run this!
 
 # Optimization of welfare function using NLopt package
 using NLopt
-idims = max(nsample/2,1) # bifurcates the random draws into two subsets
+idims = convert(Int,max(nsample/2,1)) # bifurcates the random draws into two subsets
 
 # 1. lm = 0
-lm::Int = 0
-tax_length::Int = round(2*tm - lm)
+lm = 0
+tax_length = 2*tm - lm
 
-count::Int = 0 # keep track of number of iterations
+count = 0 # keep track of number of iterations
 
 # Define function to be maximized (requires special format for NLopt package)
 
@@ -90,7 +91,7 @@ ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
 ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
 # lower bound is zero
 lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm, ub_1, ub_2])
+upper_bounds!(opt, [ub_lm; ub_1; ub_2])
 
 # Set maximization
 max_objective!(opt, welfaremax)
@@ -99,7 +100,7 @@ max_objective!(opt, welfaremax)
 ftol_rel!(opt,0.00000000000005)
 
 # Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm, ub_1, ub_2].*0.5)
+(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
 
 # Extract the two tax vectors from the optimization object
 taxes_1 = tax_vector[1:tm]
@@ -206,7 +207,7 @@ ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
 ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
 # lower bound is zero
 lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm, ub_1, ub_2])
+upper_bounds!(opt, [ub_lm; ub_1; ub_2])
 
 # Set maximization
 max_objective!(opt, welfaremax)
@@ -215,7 +216,7 @@ max_objective!(opt, welfaremax)
 ftol_rel!(opt,0.00000000000005)
 
 # Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm, ub_1, ub_2].*0.5)
+(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
 
 # Extract the two tax vectors from the optimization object
 taxes_1 = tax_vector[1:tm]
@@ -266,8 +267,8 @@ end
 S_4 = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
 
 # 3. lm = tm
-lm::Int = tm
-tax_length::Int = round(2*tm - lm)
+lm= tm
+tax_length = 2*tm - lm
 
 count = 0 # keep track of number of iterations
 
@@ -290,7 +291,7 @@ ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
 ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
 # lower bound is zero
 lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm, ub_1, ub_2])
+upper_bounds!(opt, [ub_lm; ub_1; ub_2])
 
 # Set maximization
 max_objective!(opt, welfaremax)
@@ -299,7 +300,7 @@ max_objective!(opt, welfaremax)
 ftol_rel!(opt,0.00000000000005)
 
 # Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm, ub_1, ub_2].*0.5)
+(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
 
 # Extract the two tax vectors from the optimization object
 taxes_1 = tax_vector[1:tm]
