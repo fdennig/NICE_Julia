@@ -243,7 +243,7 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims)
   end
   D_ = zeros(Tm,12,5,nsample)
   for i = 1:nsample
-    D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])./sum(P[i].L,2)[1:Tm]
+    D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])
   end
   D = D_
   # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
@@ -261,6 +261,6 @@ end
 function welfare2c_bar(W, L, rho, eta, nu, Tm)
   R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
   D = sum(R.*L)
-  cbar = (((1-nu)*W)^(1/(1-nu)))/((D)^(1-eta))
+  cbar = (((1-nu)*W)^(1/(1-nu)))/((D)^(1/(1-eta)))
   return cbar
 end
