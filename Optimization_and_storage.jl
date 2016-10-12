@@ -40,7 +40,7 @@ backstop_same = "Y" # "N" is default - choose "Y" if we want all the countries t
 
 rho = 0.015 # PP[1].para[1] # discount rate
 eta = 1.5 # PP[1].para[3] # inequality aversion/time smoothing parameter (applied to per capita consumption by region, quintile and time period)
-nu = 2 # risk aversion parameter (applied over random draws)
+nu = 1.5 # risk aversion parameter (applied over random draws)
 
 # Now execute the whole code: select all and evaluate
 ###########################################################################################################################################################################################################
