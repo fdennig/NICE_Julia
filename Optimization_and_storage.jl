@@ -6,8 +6,9 @@
 # Set user name to run auxiliary files
 user = "francis" # or "francis" or "marc" as the case may be
 sd="small"
+#nsample = 50
 # Select the regime for parameter randomization
-regime_select = 2
+regime_select = 0
   # 0 = no randomization (just uses means)
   # 1 = total randomization
 
@@ -63,7 +64,7 @@ include("$folder/NICE_Julia/createPrandom.jl") # quick way to run this!
 
 # Optimization of welfare function using NLopt package
 using NLopt
-idims = convert(Int,max(nsample/2,1)) # bifurcates the random draws into two subsets
+idims = Int(max(nsample/2,1)) # bifurcates the random draws into two subsets
 
 # 1. lm = 0
 lm = 0

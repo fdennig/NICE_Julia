@@ -124,6 +124,7 @@ function fromtax(tax,P,Tm)
 # maps the carbon tax (length(tax) < Tm) to consumption (Tmx12x5)
 	#consumption and capital
 	c = Array(Float64, Tm, 12, 5)
+  cbar = Array(Float64, Tm, 12)
 	K = Array(Float64, Tm, 12)
 	K[1,:] = P.K0
   #temperature emissions and carbon mass
@@ -156,10 +157,10 @@ function fromtax(tax,P,Tm)
 	AD[1, :] = (1-lam[1, :])./(1+D[1, :])
 	Y[1, :] = P.A[1,:].*P.L[1,:].^(1-P.para[4]).*K[1,:].^P.para[4]
 	Q[1,:] = AD[1,:].*Y[1,:]
-	cbar = (1-S[1, :]).*Q[1, :]./P.L[1, :]
+	cbar[1,:] = (1-S[1, :]).*Q[1, :]./P.L[1, :]
 	#quintile consumptions period 1
 	for i = 1:5
-		c[1,:,i] = 5*cbar.*((1+D[1, :]).*P.q[i, :] - D[1, :].*P.d[i, :])
+		c[1,:,i] = 5*cbar[1,:].*((1+D[1, :]).*P.q[i, :] - D[1, :].*P.d[i, :])
 	end
   # Period 2
 	K[2, :] = max(S[1,:].*Q[1, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
@@ -171,10 +172,10 @@ function fromtax(tax,P,Tm)
 	D[2, :] = damage(T[2, 1], P.psi)
 	AD[2, :] = (1-lam[2, :])./(1+D[2, :])
 	Q[2,:] = AD[2,:].*Y[2,:]
-	cbar = (1-S[2, :]).*Q[2, :]./P.L[2, :]
+	cbar[2,:] = (1-S[2, :]).*Q[2, :]./P.L[2, :]
 	#quintile consumptions period 2
 	for i = 1:5
-		c[2,:,i] = max(5*cbar.*((1+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)
+		c[2,:,i] = max(5*cbar[2,:].*((1+D[2, :]).*P.q[i, :] - D[2, :].*P.d[i, :]), P.tol)
 	end
 	K[3, :] = max(S[2, :].*Q[2, :].*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
 	#periods 3 to Tm-1
@@ -189,9 +190,9 @@ function fromtax(tax,P,Tm)
 		D[t, :] = damage(T[t, 1], P.psi)
 		AD[t, :] = (1-lam[t, :])./(1+D[t, :])
 		Q[t, :] = AD[t, :].*Y[t, :]
-		cbar = (1-S[t, :]).*Q[t, :]./P.L[t, :]
+		cbar[t,:] = (1-S[t, :]).*Q[t, :]./P.L[t, :]
 		for i = 1:5
-			c[t, :, i] = max(5*cbar.*((1+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)
+			c[t, :, i] = max(5*cbar[t,:].*((1+D[t, :]).*P.q[i, :] - D[t, :].*P.d[i, :]), P.tol)
 		end
 		K[t+1, :] = max(S[t, :].*Q[t, :]*10,0) # prevent negative capital (note, this will not bind at the optimum, but prevents the optmization from crashing)
 	end
@@ -203,11 +204,11 @@ function fromtax(tax,P,Tm)
 	D[Tm, :] = damage(T[Tm, 1], P.psi)
 	AD[Tm, :] = (1-lam[Tm, :])./(1+D[Tm, :])
 	Q[Tm, :] = AD[Tm, :].*Y[Tm, :]
-	cbar = (1-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]
+	cbar[Tm,:] = (1-S[Tm, :]).*Q[Tm, :]./P.L[Tm, :]
 	for i = 1:5
-		c[Tm, :, i] =  max(5*cbar.*((1+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)
+		c[Tm, :, i] =  max(5*cbar[Tm,:].*((1+D[Tm, :]).*P.q[i, :] - D[Tm, :].*P.d[i, :]), P.tol)
 	end
-	return c,K,T,E,M,mu,lam,D,AD,Y,Q
+	return c,K,T,E,M,mu,lam,D,AD,Y,Q,cbar
 end
 
 function welfare(c, L, rho, eta, Tm)
