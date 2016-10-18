@@ -1,7 +1,7 @@
 ######################################################################################################################################################
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# Run Function_defitions_for_createPrandom_and_parameters2consumption.jl first!
+# Run Function_defitions.jl first!
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ######################################################################################################################################################
@@ -31,18 +31,16 @@
 
 # Load the dparam_i.mat file to obtain the raw data
 
-using HDF5, JLD
-
 if user == "francis"
-  folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
+  folderData = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
 elseif user == "joshua"
-  folder = "/Users/joshuabernstein/Dropbox"
+  folderData = "/Users/joshuabernstein/Dropbox"
 elseif user == "marc"
-  folder = "/Users/mfleur/Dropbox/RICE_for_Simon (1)/Julia"
+  folderData = "/Users/mfleur/Dropbox/RICE_for_Simon (1)/Julia"
 else error("wrong user")
 end
 
-dparam_i = load("$folder/NICE_Julia/Data/dparam_i.jld")
+dparam_i = load("$folderData/NICE_Julia/Data/dparam_i.jld")
 # to call parameter values, use the syntax variable = dparam_i["variable"][2], except for q and tol where the '[2]' should be dropped
 # First, get means and standard deviations for random draws.
 # M for mean, sd for standard deviation
@@ -89,7 +87,27 @@ elseif sd == "large" # 10 times larger than "small"
   psi7sd = 10*0.028
   # Elasticity of income wrt. damage
   eeM = 0
-else error("set sd level - small or large")
+else
+  # TFP
+  gy0M = dparam_i["gy0"][2]'
+  gy0sd = 10*ones(12)*0.004
+  # Decarbonization
+  sighisTM = dparam_i["sighisT"][2]'
+  sighisTsd = 10*ones(12)*0.004
+  # World Backstop Price
+  pwM = dparam_i["pw"][2]*1000
+  pwsd = 68
+  # Atmosphere to upper ocean transfer coefficient
+  TrM12M = dparam_i["TrM"][2][1,2]/100
+  TrM12sd = 10*0.01079
+  # Climate sensitivity
+  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
+  xi1sd = 10*0.3912
+  # Coefficient on T^7 in damage function
+  psi7M = 0.082 # hardcoded originally
+  psi7sd = 10*0.028
+  # Elasticity of income wrt. damage
+  eeM = 0
 end
 
 
@@ -337,9 +355,8 @@ DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,2
 # Build the full array of exogenous parameters.
 
 # Load the certainPARAMETERS.mat file
-using HDF5, JLD
-# certainPARAMETERS = load("/Users/francis/Dropbox/ARBEIT/RESEARCH/rice/rice_for_simon/Julia/Data/certainPARAMETERS.jld") # Adjust for User: FRANCIS
-certainPARAMETERS = load("$folder/NICE_Julia/Data/certainPARAMETERS.jld") # Adjust for User: JOSHUA
+
+certainPARAMETERS = load("$folderData/NICE_Julia/Data/certainPARAMETERS.jld") # Adjust for User: JOSHUA
 
 # to call parameter values, use the syntax 'variable = certainPARAMETERS["variable"][2]'
 
@@ -356,6 +373,8 @@ certainPARAMETERS = load("$folder/NICE_Julia/Data/certainPARAMETERS.jld") # Adju
 Th = certainPARAMETERS["Th"][2]
 if backstop_same == "Y"
   RL = ones(1,12)
+elseif isdefined(:backstop_same) == false
+  RL = certainPARAMETERS["RL"][2]
 else RL = certainPARAMETERS["RL"][2]
 end
 du = certainPARAMETERS["du"][2] # could be randomized
@@ -557,6 +576,7 @@ immutable PP_
   M0 # 1x3 array (constant)
   M1 #1x3 array (constant)
   K0 # 1xI array
+  E0 # 1x12 vector with 2005 emissions
   R # 1xT array
   q # 5x12 array (constant)
   d # 5x12 array
@@ -566,7 +586,7 @@ end
 PP = Array(PP_,nsample)
 
 for i=1:nsample
-  PP[i] = PP_(para,L[i,:,:]',tfp[i,:,:]',sigma[i,:,:]',th1[i,:,:]',th2,pb[i,:,:]',EL',Fex,TrM[i,:,:],xi[i,:]',TrT[i,:,:],psi[i,:,:],T0,T1,M0,M1,K0,R,q,d[i,:,:],tol)
+  PP[i] = PP_(para,L[i,:,:]',tfp[i,:,:]',sigma[i,:,:]',th1[i,:,:]',th2,pb[i,:,:]',EL',Fex,TrM[i,:,:],xi[i,:]',TrT[i,:,:],psi[i,:,:],T0,T1,M0,M1,K0,E0,R,q,d[i,:,:],tol)
   # note the transposes so that the relevant matrices are now in TxI format for easy transfer to following functions/code
 end
 

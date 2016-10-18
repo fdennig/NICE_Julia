@@ -1,6 +1,14 @@
 # Function Definitions required to run createPrandom_and_parameters2consumption
 
 function backstop(Th,RL,pw,du,dd,tau)
+  #creates the nsample,12,60 array of the backstop price
+  #inputs:
+  #   Th (scalar): initial to final backstop price ratio
+  #   RL Array(1,12):Region to world backstop price ratio
+  #   pw (scalar): price of world backstop
+  #   du (scalar): rate of decline of backstop price before tau
+  #   dd (scalar): rate of decline of backstop price after tau
+  #   tau (scalar): period at which rate of decline changes
   T = 60
   I = 12
   taut = convert(Int,(tau-1995)/10)
@@ -17,6 +25,9 @@ function backstop(Th,RL,pw,du,dd,tau)
 end
 
 function sig(gT,delsig,sighisT,adj15,Y0,E0)
+  #creates the nsample,12,60 array of (unmitigated/BAU) emissions to output ratio
+  #inputs:
+  #   gT
   T = 60
   I = 12
   sigma = zeros(nsample,I,T) # note order of dimensions
@@ -102,26 +113,37 @@ end
 
 function damage(temp, psi)
   # maps atmospheric temperature to damage
-	#calculate all regions' damage term
+	# calculate all regions' damage term
+  # input:
+  #   temp (scalar): atmospheric temperature (relative to preindustrial)
+  #   psi Array(3,12): damage function coefficients
 	D = (psi[1, :].*temp + psi[2, :].*temp^2 + (psi[3,:].*temp).^7).*0.01
 end
 
 function tempforcing(mat, fex, xi, transition, stock)
   # temperature cycle forced by carbon mass
-	#evaluate temperature flow
+	#inputs:
+  #   mat (scalar): atmospheric carbon mass
+  #   fex (scalar): exogenous forcing
+  #   xi Array(1,7): forcing eqn parameters
+  #   transition Array(2,2): stochastic temperature flow matrix
+  #   stock Array(1,2): temperature stock in atmosphere and oceans
 	forcing = xi[2]*(xi[1]*log2((mat+0.000001)/xi[6])+fex)
 	T = stock*transition + [1 0]*forcing
 end
 
 function Mflow(stock, flow, transition)
   # carbon cycle forced by emissions
-	#evaluate the carbon flow
+	#inputs:
+  #   stock Array(1,3): carbon stock in three reservoirs
+  #   flow (scalar): atmospheric carbon emissions
+  #   transition Array(3,3): stochasting carbon cycle matrix
 	M = stock*transition + 10*[1 0 0]*flow
 end
 
 function fromtax(tax,P,Tm)
-# this is the NICE model
-# maps the carbon tax (length(tax) < Tm) to consumption (Tmx12x5)
+  # this is the NICE model
+  # maps the carbon tax (length(tax) < Tm) to consumption (Tmx12x5) using the parameters in the parameter draw P
 	#consumption and capital
 	c = Array(Float64, Tm, 12, 5)
   cbar = Array(Float64, Tm, 12)
@@ -132,6 +154,7 @@ function fromtax(tax,P,Tm)
 	T[1, :] = P.T0
 	T[2, :] = P.T1
 	E = Array(Float64, Tm, 12)
+  E[1,:] = P.E0/1000
 	M = Array(Float64, Tm, 3)
 	M[1, :] = P.M0
 	M[2, :] = P.M1

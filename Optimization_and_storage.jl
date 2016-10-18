@@ -2,7 +2,7 @@
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # Preliminaries
-
+using HDF5, JLD
 # Set user name to run auxiliary files
 user = "francis" # or "francis" or "marc" as the case may be
 sd="small"
@@ -103,8 +103,8 @@ ftol_rel!(opt,0.00000000000005)
 (expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
 
 # Extract the two tax vectors from the optimization object
-taxes_1 = tax_vector[1:tm]
-taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
+taxes_1 = [0;tax_vector[1:tm];zeros(Tm-tm-1)]
+taxes_2 = [0;tax_vector[1:lm];tax_vector[tm+1:end];zeros(Tm-tm-1)]
 
 # Create storage objects
 c = Array(Float64, Tm, 12, 5, nsample)
@@ -179,178 +179,211 @@ type Results
 end
 
 # create .jld of S_lm
-S_0 = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
+res = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
 filenm = string(regime_select)
+# create dataframe of period by region by state data
+  using DataFrames
+  # set up dataframe with periods, regions, State
+  dataP = DataFrame(ID = 1:(Tm*12*nsample), State = reshape(repmat(collect(1:nsample)',Tm*12),Tm*12*nsample,1)[:,1], Region = repmat(reshape(repmat(Regions,Tm),Tm*12,1),nsample)[:,1], Year = repmat(repmat(10*(0:Tm-1)+2005,12),nsample))
+  # add taxes (to the correct states)
+  dataP[:tax] = [repmat(repmat(res.taxes_1,12),idims);repmat(repmat(res.taxes_2,12),nsample-idims)]
 
-# 2. lm = 4
-lm::Int = 4
-tax_length::Int = round(2*tm - lm)
 
-count = 0 # keep track of number of iterations
+  # add consumption quintiles
+  confield = [:cq1, :cq2, :cq3, :cq4, :cq5]
+  cquintiles=reshape(permutedims(res.c,[1 2 4 3]),Tm*12*nsample,5)
+  m=1
+  for field in confield
+    dataP[Symbol(field)] = cquintiles[:,m]
+    m+=1
+  end
+  # add remaining endogenous variables
+  for field in [:K,:E,:mu,:lam,:D,:Y]
+    dataP[Symbol(field)] = reshape(getfield(res,field),Tm*12*nsample)
+  end
+  # add exogenous variables
+  y = Array(Float64,Tm*12*nsample,6)
+  x = Array(Float64,Tm*12,nsample)
+  k=1
+  for field in [:L,:A,:sigma,:th1,:pb,:EL]
+    for m in 1:nsample
+      x[:,m] = reshape(getfield(res.PP[m],field)[1:Tm,:],Tm*12)
+    end
+    y[:,k] = reshape(x,Tm*12*nsample)
+    dataP[Symbol(field)] = y[:,k]
+    k+=1
+  end
 
-# Define function to be maximized (requires special format for NLopt package)
 
-function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
-  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims)[1]
-  global count
-  count::Int += 1
-  println("f_$count($x)")
-  return WW
-end
-
-# Choose algorithm (gradient free method) and dimension of tax vector, tm+1 <= n <= Tm
-n = tax_length
-opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
-
-ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
-ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
-ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
-# lower bound is zero
-lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm; ub_1; ub_2])
-
-# Set maximization
-max_objective!(opt, welfaremax)
-
-# Set relative tolerance for the tax vector choice - vs. ftol for function value?
-ftol_rel!(opt,0.00000000000005)
-
-# Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
-
-# Extract the two tax vectors from the optimization object
-taxes_1 = tax_vector[1:tm]
-taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
-
-# # Create storage objects
-# c = Array(Float64, Tm, 12, 5, nsample)
-# K = Array(Float64, Tm, 12, nsample)
-# T = Array(Float64, Tm, 2, nsample)
-# E = Array(Float64, Tm, 12, nsample)
-# M = Array(Float64, Tm, 3, nsample)
-# mu = Array(Float64, Tm, 12, nsample)
-# lam = Array(Float64, Tm, 12, nsample)
-# D = Array(Float64, Tm, 12, nsample)
-# AD = Array(Float64, Tm, 12, nsample)
-# Y = Array(Float64, Tm, 12, nsample)
-# Q = Array(Float64, Tm, 12, nsample)
-
-# Store data
-for i = 1:convert(Int, nsample/2)
-  c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
-  K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
-  T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
-  E[:,:,i] = fromtax(taxes_1,PP[i],Tm)[4]
-  M[:,:,i] = fromtax(taxes_1,PP[i],Tm)[5]
-  mu[:,:,i] = fromtax(taxes_1,PP[i],Tm)[6]
-  lam[:,:,i] = fromtax(taxes_1,PP[i],Tm)[7]
-  D[:,:,i] = fromtax(taxes_1,PP[i],Tm)[8]
-  AD[:,:,i] = fromtax(taxes_1,PP[i],Tm)[9]
-  Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
-  Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
-end
-for i = convert(Int,(nsample/2 + 1)):nsample
-  c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
-  K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
-  T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
-  E[:,:,i] = fromtax(taxes_2,PP[i],Tm)[4]
-  M[:,:,i] = fromtax(taxes_2,PP[i],Tm)[5]
-  mu[:,:,i] = fromtax(taxes_2,PP[i],Tm)[6]
-  lam[:,:,i] = fromtax(taxes_2,PP[i],Tm)[7]
-  D[:,:,i] = fromtax(taxes_2,PP[i],Tm)[8]
-  AD[:,:,i] = fromtax(taxes_2,PP[i],Tm)[9]
-  Y[:,:,i] = fromtax(taxes_2,PP[i],Tm)[10]
-  Q[:,:,i] = fromtax(taxes_2,PP[i],Tm)[11]
-end
-
-# create .jld of S_lm
-S_4 = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
-
-# 3. lm = tm
-lm= tm
-tax_length = 2*tm - lm
-
-count = 0 # keep track of number of iterations
-
-# Define function to be maximized (requires special format for NLopt package)
-
-function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
-  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims)[1]
-  global count
-  count::Int += 1
-  println("f_$count($x)")
-  return WW
-end
-
-# Choose algorithm (gradient free method) and dimension of tax vector, tm+1 <= n <= Tm
-n = tax_length
-opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
-
-ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
-ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
-ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
-# lower bound is zero
-lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm; ub_1; ub_2])
-
-# Set maximization
-max_objective!(opt, welfaremax)
-
-# Set relative tolerance for the tax vector choice - vs. ftol for function value?
-ftol_rel!(opt,0.00000000000005)
-
-# Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
-
-# Extract the two tax vectors from the optimization object
-taxes_1 = tax_vector[1:tm]
-
-# # Create storage objects
-# c = Array(Float64, Tm, 12, 5, nsample)
-# K = Array(Float64, Tm, 12, nsample)
-# T = Array(Float64, Tm, 2, nsample)
-# E = Array(Float64, Tm, 12, nsample)
-# M = Array(Float64, Tm, 3, nsample)
-# mu = Array(Float64, Tm, 12, nsample)
-# lam = Array(Float64, Tm, 12, nsample)
-# D = Array(Float64, Tm, 12, nsample)
-# AD = Array(Float64, Tm, 12, nsample)
-# Y = Array(Float64, Tm, 12, nsample)
-# Q = Array(Float64, Tm, 12, nsample)
-
-# Store data
-for i = 1:convert(Int, nsample/2)
-  c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
-  K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
-  T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
-  E[:,:,i] = fromtax(taxes_1,PP[i],Tm)[4]
-  M[:,:,i] = fromtax(taxes_1,PP[i],Tm)[5]
-  mu[:,:,i] = fromtax(taxes_1,PP[i],Tm)[6]
-  lam[:,:,i] = fromtax(taxes_1,PP[i],Tm)[7]
-  D[:,:,i] = fromtax(taxes_1,PP[i],Tm)[8]
-  AD[:,:,i] = fromtax(taxes_1,PP[i],Tm)[9]
-  Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
-  Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
-end
-for i = convert(Int,(nsample/2 + 1)):nsample
-  c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
-  K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
-  T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
-  E[:,:,i] = fromtax(taxes_2,PP[i],Tm)[4]
-  M[:,:,i] = fromtax(taxes_2,PP[i],Tm)[5]
-  mu[:,:,i] = fromtax(taxes_2,PP[i],Tm)[6]
-  lam[:,:,i] = fromtax(taxes_2,PP[i],Tm)[7]
-  D[:,:,i] = fromtax(taxes_2,PP[i],Tm)[8]
-  AD[:,:,i] = fromtax(taxes_2,PP[i],Tm)[9]
-  Y[:,:,i] = fromtax(taxes_2,PP[i],Tm)[10]
-  Q[:,:,i] = fromtax(taxes_2,PP[i],Tm)[11]
-end
-
-# create .jld of S_lm
-S_tm = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
-
-SS = Array(Results,3)
-SS = [S_0 S_4 S_tm]
-
-# using JLD
-# save("$folder/NICE_Julia/Outputs/SS_$filenm.jld", "SS", SS)
+# # 2. lm = 4
+# lm::Int = 4
+# tax_length::Int = round(2*tm - lm)
+#
+# count = 0 # keep track of number of iterations
+#
+# # Define function to be maximized (requires special format for NLopt package)
+#
+# function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
+#   WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims)[1]
+#   global count
+#   count::Int += 1
+#   println("f_$count($x)")
+#   return WW
+# end
+#
+# # Choose algorithm (gradient free method) and dimension of tax vector, tm+1 <= n <= Tm
+# n = tax_length
+# opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
+#
+# ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
+# ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
+# ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
+# # lower bound is zero
+# lower_bounds!(opt, zeros(n))
+# upper_bounds!(opt, [ub_lm; ub_1; ub_2])
+#
+# # Set maximization
+# max_objective!(opt, welfaremax)
+#
+# # Set relative tolerance for the tax vector choice - vs. ftol for function value?
+# ftol_rel!(opt,0.00000000000005)
+#
+# # Optimize! Initial guess defined above
+# (expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
+#
+# # Extract the two tax vectors from the optimization object
+# taxes_1 = tax_vector[1:tm]
+# taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
+#
+# # # Create storage objects
+# # c = Array(Float64, Tm, 12, 5, nsample)
+# # K = Array(Float64, Tm, 12, nsample)
+# # T = Array(Float64, Tm, 2, nsample)
+# # E = Array(Float64, Tm, 12, nsample)
+# # M = Array(Float64, Tm, 3, nsample)
+# # mu = Array(Float64, Tm, 12, nsample)
+# # lam = Array(Float64, Tm, 12, nsample)
+# # D = Array(Float64, Tm, 12, nsample)
+# # AD = Array(Float64, Tm, 12, nsample)
+# # Y = Array(Float64, Tm, 12, nsample)
+# # Q = Array(Float64, Tm, 12, nsample)
+#
+# # Store data
+# for i = 1:convert(Int, nsample/2)
+#   c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
+#   K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
+#   T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
+#   E[:,:,i] = fromtax(taxes_1,PP[i],Tm)[4]
+#   M[:,:,i] = fromtax(taxes_1,PP[i],Tm)[5]
+#   mu[:,:,i] = fromtax(taxes_1,PP[i],Tm)[6]
+#   lam[:,:,i] = fromtax(taxes_1,PP[i],Tm)[7]
+#   D[:,:,i] = fromtax(taxes_1,PP[i],Tm)[8]
+#   AD[:,:,i] = fromtax(taxes_1,PP[i],Tm)[9]
+#   Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
+#   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
+# end
+# for i = convert(Int,(nsample/2 + 1)):nsample
+#   c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
+#   K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
+#   T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
+#   E[:,:,i] = fromtax(taxes_2,PP[i],Tm)[4]
+#   M[:,:,i] = fromtax(taxes_2,PP[i],Tm)[5]
+#   mu[:,:,i] = fromtax(taxes_2,PP[i],Tm)[6]
+#   lam[:,:,i] = fromtax(taxes_2,PP[i],Tm)[7]
+#   D[:,:,i] = fromtax(taxes_2,PP[i],Tm)[8]
+#   AD[:,:,i] = fromtax(taxes_2,PP[i],Tm)[9]
+#   Y[:,:,i] = fromtax(taxes_2,PP[i],Tm)[10]
+#   Q[:,:,i] = fromtax(taxes_2,PP[i],Tm)[11]
+# end
+#
+# # create .jld of S_lm
+# S_4 = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
+#
+# # 3. lm = tm
+# lm= tm
+# tax_length = 2*tm - lm
+#
+# count = 0 # keep track of number of iterations
+#
+# # Define function to be maximized (requires special format for NLopt package)
+#
+# function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
+#   WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims)[1]
+#   global count
+#   count::Int += 1
+#   println("f_$count($x)")
+#   return WW
+# end
+#
+# # Choose algorithm (gradient free method) and dimension of tax vector, tm+1 <= n <= Tm
+# n = tax_length
+# opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
+#
+# ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
+# ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
+# ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
+# # lower bound is zero
+# lower_bounds!(opt, zeros(n))
+# upper_bounds!(opt, [ub_lm; ub_1; ub_2])
+#
+# # Set maximization
+# max_objective!(opt, welfaremax)
+#
+# # Set relative tolerance for the tax vector choice - vs. ftol for function value?
+# ftol_rel!(opt,0.00000000000005)
+#
+# # Optimize! Initial guess defined above
+# (expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
+#
+# # Extract the two tax vectors from the optimization object
+# taxes_1 = tax_vector[1:tm]
+#
+# # # Create storage objects
+# # c = Array(Float64, Tm, 12, 5, nsample)
+# # K = Array(Float64, Tm, 12, nsample)
+# # T = Array(Float64, Tm, 2, nsample)
+# # E = Array(Float64, Tm, 12, nsample)
+# # M = Array(Float64, Tm, 3, nsample)
+# # mu = Array(Float64, Tm, 12, nsample)
+# # lam = Array(Float64, Tm, 12, nsample)
+# # D = Array(Float64, Tm, 12, nsample)
+# # AD = Array(Float64, Tm, 12, nsample)
+# # Y = Array(Float64, Tm, 12, nsample)
+# # Q = Array(Float64, Tm, 12, nsample)
+#
+# # Store data
+# for i = 1:convert(Int, nsample/2)
+#   c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
+#   K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
+#   T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
+#   E[:,:,i] = fromtax(taxes_1,PP[i],Tm)[4]
+#   M[:,:,i] = fromtax(taxes_1,PP[i],Tm)[5]
+#   mu[:,:,i] = fromtax(taxes_1,PP[i],Tm)[6]
+#   lam[:,:,i] = fromtax(taxes_1,PP[i],Tm)[7]
+#   D[:,:,i] = fromtax(taxes_1,PP[i],Tm)[8]
+#   AD[:,:,i] = fromtax(taxes_1,PP[i],Tm)[9]
+#   Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
+#   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
+# end
+# for i = convert(Int,(nsample/2 + 1)):nsample
+#   c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
+#   K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
+#   T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
+#   E[:,:,i] = fromtax(taxes_2,PP[i],Tm)[4]
+#   M[:,:,i] = fromtax(taxes_2,PP[i],Tm)[5]
+#   mu[:,:,i] = fromtax(taxes_2,PP[i],Tm)[6]
+#   lam[:,:,i] = fromtax(taxes_2,PP[i],Tm)[7]
+#   D[:,:,i] = fromtax(taxes_2,PP[i],Tm)[8]
+#   AD[:,:,i] = fromtax(taxes_2,PP[i],Tm)[9]
+#   Y[:,:,i] = fromtax(taxes_2,PP[i],Tm)[10]
+#   Q[:,:,i] = fromtax(taxes_2,PP[i],Tm)[11]
+# end
+#
+# # create .jld of S_lm
+# S_tm = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
+#
+# SS = Array(Results,3)
+# SS = [S_0 S_4 S_tm]
+#
+# # using JLD
+# # save("$folder/NICE_Julia/Outputs/SS_$filenm.jld", "SS", SS)
