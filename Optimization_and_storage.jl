@@ -75,9 +75,9 @@ tax_length = 2*tm - lm
 count = 0 # keep track of number of iterations
 
 # Define function to be maximized (requires special format for NLopt package)
-
+model = "RICE"
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
-  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims, model="NICE")[1] #change to "RICE" or "DICE" for different levels of aggregation
+  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims,model="RICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
   global count
   count::Int += 1
   println("f_$count($x)")
@@ -213,7 +213,7 @@ filenm = string(regime_select)
         m+=1
       end
     elseif length(size(res.c)) == 3
-      cons = reshape(res.c,Tm*12*nsample,1)
+      cons = reshape(res.c,Tm*12*nsample,1)[:,1]
       dataP[:c] = cons
     end
 
