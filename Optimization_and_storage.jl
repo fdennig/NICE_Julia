@@ -28,6 +28,8 @@ regime_select = 0
   # 14 = Deciles - High TFP and High ee vs. Low TFP and Low ee
   # 15 = Deciles - High TFP and Low ee vs. Low TFP and High ee
 
+  # 16 = TFP uncertainty
+
 # Define exogenous parameters
 
 Tm = 32
@@ -75,7 +77,7 @@ count = 0 # keep track of number of iterations
 # Define function to be maximized (requires special format for NLopt package)
 
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
-  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims)[1]
+  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims, model="NICE")[1] #change to "RICE" or "DICE" for different levels of aggregation
   global count
   count::Int += 1
   println("f_$count($x)")
@@ -107,7 +109,11 @@ taxes_1 = [0;tax_vector[1:tm];zeros(Tm-tm-1)]
 taxes_2 = [0;tax_vector[1:lm];tax_vector[tm+1:end];zeros(Tm-tm-1)]
 
 # Create storage objects
-c = Array(Float64, Tm, 12, 5, nsample)
+if (model == "RICE") | (model == "DICE")
+  c = Array(Float64, Tm, 12, nsample)
+else
+  c = Array(Float64, Tm, 12, 5, nsample)
+end
 K = Array(Float64, Tm, 12, nsample)
 T = Array(Float64, Tm, 2, nsample)
 E = Array(Float64, Tm, 12, nsample)
@@ -121,7 +127,11 @@ Q = Array(Float64, Tm, 12, nsample)
 
 # Store data
 for i = 1:convert(Int,nsample/2)
-  c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
+  if (model == "RICE") | (model == "DICE")
+    c[:,:,i] = fromtax(taxes_1,PP[i],Tm)[12]
+  else
+    c[:,:,:,i] = fromtax(taxes_1,PP[i],Tm)[1]
+  end
   K[:,:,i] = fromtax(taxes_1,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_1,PP[i],Tm)[3]
   E[:,:,i] = fromtax(taxes_1,PP[i],Tm)[4]
@@ -134,7 +144,11 @@ for i = 1:convert(Int,nsample/2)
   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
 end
 for i = convert(Int,(nsample/2 + 1)):nsample
-  c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
+  if (model == "RICE") | (model == "DICE")
+    c[:,:,i] = fromtax(taxes_2,PP[i],Tm)[12]
+  else
+    c[:,:,:,i] = fromtax(taxes_2,PP[i],Tm)[1]
+  end
   K[:,:,i] = fromtax(taxes_2,PP[i],Tm)[2]
   T[:,:,i] = fromtax(taxes_2,PP[i],Tm)[3]
   E[:,:,i] = fromtax(taxes_2,PP[i],Tm)[4]
@@ -184,35 +198,43 @@ filenm = string(regime_select)
 # create dataframe of period by region by state data
   using DataFrames
   # set up dataframe with periods, regions, State
-  dataP = DataFrame(ID = 1:(Tm*12*nsample), State = reshape(repmat(collect(1:nsample)',Tm*12),Tm*12*nsample,1)[:,1], Region = repmat(reshape(repmat(Regions,Tm),Tm*12,1),nsample)[:,1], Year = repmat(repmat(10*(0:Tm-1)+2005,12),nsample))
-  # add taxes (to the correct states)
-  dataP[:tax] = [repmat(repmat(res.taxes_1,12),idims);repmat(repmat(res.taxes_2,12),nsample-idims)]
+  if length(size(res.c)) > 2
+    dataP = DataFrame(ID = 1:(Tm*12*nsample), State = reshape(repmat(collect(1:nsample)',Tm*12),Tm*12*nsample,1)[:,1], Region = repmat(reshape(repmat(Regions,Tm),Tm*12,1),nsample)[:,1], Year = repmat(repmat(10*(0:Tm-1)+2005,12),nsample))
+    # add taxes (to the correct states)
+    dataP[:tax] = [repmat(repmat(res.taxes_1,12),idims);repmat(repmat(res.taxes_2,12),nsample-idims)]
 
-
-  # add consumption quintiles
-  confield = [:cq1, :cq2, :cq3, :cq4, :cq5]
-  cquintiles=reshape(permutedims(res.c,[1 2 4 3]),Tm*12*nsample,5)
-  m=1
-  for field in confield
-    dataP[Symbol(field)] = cquintiles[:,m]
-    m+=1
-  end
-  # add remaining endogenous variables
-  for field in [:K,:E,:mu,:lam,:D,:Y]
-    dataP[Symbol(field)] = reshape(getfield(res,field),Tm*12*nsample)
-  end
-  # add exogenous variables
-  y = Array(Float64,Tm*12*nsample,6)
-  x = Array(Float64,Tm*12,nsample)
-  k=1
-  for field in [:L,:A,:sigma,:th1,:pb,:EL]
-    for m in 1:nsample
-      x[:,m] = reshape(getfield(res.PP[m],field)[1:Tm,:],Tm*12)
+    # add consumption quintiles
+    if length(size(res.c)) == 4
+      confield = [:cq1, :cq2, :cq3, :cq4, :cq5]
+      cquintiles=reshape(permutedims(res.c,[1 2 4 3]),Tm*12*nsample,5)
+      m=1
+      for field in confield
+        dataP[Symbol(field)] = cquintiles[:,m]
+        m+=1
+      end
+    elseif length(size(res.c)) == 3
+      cons = reshape(res.c,Tm*12*nsample,1)
+      dataP[:c] = cons
     end
-    y[:,k] = reshape(x,Tm*12*nsample)
-    dataP[Symbol(field)] = y[:,k]
-    k+=1
+
+    # add remaining endogenous variables
+    for field in [:K,:E,:mu,:lam,:D,:Y]
+      dataP[Symbol(field)] = reshape(getfield(res,field),Tm*12*nsample)
+    end
+    # add exogenous variables
+    y = Array(Float64,Tm*12*nsample,6)
+    x = Array(Float64,Tm*12,nsample)
+    k=1
+    for field in [:L,:A,:sigma,:th1,:pb,:EL]
+      for m in 1:nsample
+        x[:,m] = reshape(getfield(res.PP[m],field)[1:Tm,:],Tm*12)
+      end
+      y[:,k] = reshape(x,Tm*12*nsample)
+      dataP[Symbol(field)] = y[:,k]
+      k+=1
+    end
   end
+
 
 
 # # 2. lm = 4

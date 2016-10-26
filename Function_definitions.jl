@@ -251,35 +251,82 @@ function tax2welfare(tax, P, rho, eta, Tm)
   return W
 end
 
-function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims)
-  c = zeros(Tm,12,5,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
-  for i = 1:idims
-      c[:,:,:,i] = fromtax(tax[1:tm],P[i],Tm)[1] # only consider tm length since we want to create a tax vector of particular length
+function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NICE")
+  if model == "NICE"
+    c = zeros(Tm,12,5,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
+    for i = 1:idims
+        c[:,:,:,i] = fromtax(tax[1:tm],P[i],Tm)[1] # only consider tm length since we want to create a tax vector of particular length
+    end
+    for i = idims+1:length(P) # NB length(P) = nsample
+        c[:,:,:,i] = fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[1]
+    end
+    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+    D = zeros(Tm,12,5,nsample)
+    # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
+    for t = 1:Tm
+      D[t,:,:,:] = ((c[t,:,:,:].^(1-eta)).*R[t])./(1-eta)
+    end
+    D_ = zeros(Tm,12,5,nsample)
+    for i = 1:nsample
+      D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])
+    end
+    D = D_
+    # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
+    B1 = sum(D,3)
+    # Now sum over regions to get per capita discounted utility at time t, in random draw n
+    B2 = sum(B1,2)
+    # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
+    B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
+    # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
+    W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
+    # W = (0.33*B3[1,1,1,1].^(1-nu) + 0.67*B3[1,1,1,2].^(1-nu))*(1/(1-nu)) # Test for unequal probabilities effect on learning...
+    return W,c
+  elseif model == "RICE"
+    c = zeros(Tm,12,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
+    for i = 1:idims
+        c[:,:,i] = fromtax(tax[1:tm],P[i],Tm)[12] # only consider tm length since we want to create a tax vector of particular length
+    end
+    for i = idims+1:length(P) # NB length(P) = nsample
+        c[:,:,i] = fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[12]
+    end
+    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+    D = zeros(Tm,12,nsample)
+    # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
+    for t = 1:Tm #convert per capita consumption to discounted utility
+      D[t,:,:] = ((c[t,:,:].^(1-eta)).*R[t])./(1-eta)
+    end
+    for i = 1:nsample # weight discounted utility by regional population
+      D[:,:,i] = D[:,:,i].*P[i].L[1:Tm,:]
+    end
+    # Now sum over regions to get per capita discounted utility at time t, in random draw n
+    B2 = sum(D,2)
+    # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
+    B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
+    # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
+    W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
+    return W,c
+  elseif model == "DICE"
+    c = zeros(Tm,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
+    for i = 1:idims
+        c[:,i] = sum(fromtax(tax[1:tm],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2) # only consider tm length since we want to create a tax vector of particular length
+    end
+    for i = idims+1:length(P) # NB length(P) = nsample
+        c[:,i] = sum(fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[12].*P[i].L[1:Tm,:],2)./sum(P[i].L[1:Tm,:],2)
+    end
+    R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
+    D = zeros(Tm,nsample)
+    for t = 1:Tm #convert per capita consumption to discounted utility
+      D[t,:] = ((c[t,:].^(1-eta)).*R[t])./(1-eta)
+    end
+    for i=1:nsample # weight discounted utility by global population
+      D[:,i] = D[:,i].*sum(P[i].L[1:Tm,:],2)
+    end
+    # Now sum over time to get per capita lifetime discounted utility in random draw n
+    B3 = (sum(D,1).*(1-eta)).^(1/(1-eta))
+    # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
+    W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
+    return W,c
   end
-  for i = idims+1:length(P) # NB length(P) = nsample
-      c[:,:,:,i] = fromtax([tax[1:lm];tax[tm+1:end]],P[i],Tm)[1]
-  end
-  R = 1./(1+rho).^(10.*(0:(Tm-1))) # discount factors for each time period
-  D = zeros(Tm,12,5,nsample)
-  # Convert consumption to per capita discounted utility at time t, in region I (weighted by population), in quintile q, for random draw n
-  for t = 1:Tm
-    D[t,:,:,:] = ((c[t,:,:,:].^(1-eta)).*R[t])./(1-eta)
-  end
-  D_ = zeros(Tm,12,5,nsample)
-  for i = 1:nsample
-    D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])
-  end
-  D = D_
-  # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
-  B1 = sum(D,3)
-  # Now sum over regions to get per capita discounted utility at time t, in random draw n
-  B2 = sum(B1,2)
-  # Now sum over time to get per capita lifetime discounted utility in random draw n, and undo the concavity to get a "certainty equivalent" consumption measure
-  B3 = (sum(B2,1).*(1-eta)).^(1/(1-eta))
-  # Now sum over random draws with the risk adjustment (nu) to get total world welfare (normalizing by nsample)
-  W = sum(B3.^(1-nu))*(1/(1-nu))./nsample
-#   W = (0.33*B3[1,1,1,1].^(1-nu) + 0.67*B3[1,1,1,2].^(1-nu))*(1/(1-nu)) # Test for unequal probabilities effect on learning...
-  return W,c
 end
 
 function welfare2c_bar(W, L, rho, eta, nu, Tm)
