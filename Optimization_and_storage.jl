@@ -68,16 +68,19 @@ include("$folder/NICE_Julia/createPrandom.jl") # quick way to run this!
 using NLopt
 idims = Int(max(nsample/2,1)) # bifurcates the random draws into two subsets
 
-# 1. lm = 0
-lm = 0
-tax_length = 2*tm - lm
+n=tm-3
+
 
 count = 0 # keep track of number of iterations
 
 # Define function to be maximized (requires special format for NLopt package)
 model = "RICE"
+# backstop or zero vector for first three periods
+#tax15to35 = maximum(squeeze(maximum(pb,2),2),1)[1:3] # or
+tax15to35 = zeros(3)
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
-  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims,model="RICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
+  tex = [tax15to35;x]
+  WW = tax2expectedwelfare(tex,PP,rho,eta,nu,Tm,tm,lm,idims,model="RICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
   global count
   count::Int += 1
   println("f_$count($x)")
@@ -85,15 +88,13 @@ function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspeci
 end
 
 # Choose algorithm (gradient free method) and dimension of tax vector, tm+1 <= n <= Tm
-n = tax_length
 opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
 
-ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
-ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
-ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
+ub = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[4:tm]
+
 # lower bound is zero
 lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm; ub_1; ub_2])
+upper_bounds!(opt, ub)
 
 # Set maximization
 max_objective!(opt, welfaremax)
@@ -102,11 +103,11 @@ max_objective!(opt, welfaremax)
 ftol_rel!(opt,0.00000000000005)
 
 # Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
+(expected_welfare,tax_vector,ret) = optimize(opt, ub.*0.5)
 
 # Extract the two tax vectors from the optimization object
-taxes_1 = [0;tax_vector[1:tm];zeros(Tm-tm-1)]
-taxes_2 = [0;tax_vector[1:lm];tax_vector[tm+1:end];zeros(Tm-tm-1)]
+taxes_1 = tax_vector #[0;tax_vector[1:tm];zeros(Tm-tm-1)]
+taxes_2 = tax_vector #[0;tax_vector[1:lm];tax_vector[tm+1:end];zeros(Tm-tm-1)]
 
 # Create storage objects
 if (model == "RICE") | (model == "DICE")
