@@ -274,7 +274,6 @@ function tax2welfare(tax, P, rho, eta, Tm; model="NICE")
   return W
 end
 
-
 function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NICE")
   if model == "NICE"
     c = zeros(Tm,12,5,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
