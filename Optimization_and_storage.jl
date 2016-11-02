@@ -105,8 +105,8 @@ ftol_rel!(opt,0.00000000000005)
 (expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
 
 # Extract the two tax vectors from the optimization object
-taxes_1 = [0;tax_vector[1:tm];zeros(Tm-tm-1)]
-taxes_2 = [0;tax_vector[1:lm];tax_vector[tm+1:end];zeros(Tm-tm-1)]
+taxes_1 = tax_vector[1:tm]
+taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
 
 # Create storage objects
 if (model == "RICE") | (model == "DICE")
@@ -160,7 +160,8 @@ for i = convert(Int,(nsample/2 + 1)):nsample
   Y[:,:,i] = fromtax(taxes_2,PP[i],Tm)[10]
   Q[:,:,i] = fromtax(taxes_2,PP[i],Tm)[11]
 end
-
+taxes_1 = [0;taxes_1;zeros(Tm-tm-1)]
+taxes_2 = [0;taxes_2;zeros(Tm-tm-1)]
 # Region Labels
 Regions = ["USA", "OECD Europe", "Japan", "Russia", "Non-Russia Eurasia", "China", "India", "Middle East", "Africa", "Latin America", "OHI", "Other non-OECD Asia"]'
 
