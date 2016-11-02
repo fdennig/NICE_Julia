@@ -234,7 +234,7 @@ function fromtax(tax,P,Tm)
 	return c,K,T,E,M,mu,lam,D,AD,Y,Q,cbar
 end
 
-function welfare(c, L, rho, eta, Tm)
+function welfareN(c, L, rho, eta, Tm)
 	R = 1./(1+rho).^(10.*(0:(Tm-1)))
 	A = Array(Float64, Tm, 12, 5)
 	for i = 1:5
@@ -245,9 +245,32 @@ function welfare(c, L, rho, eta, Tm)
   return W
 end
 
-function tax2welfare(tax, P, rho, eta, Tm)
-	c = fromtax(tax, P, Tm)[1]
-	W = welfare(c, P.L, rho, eta, Tm)
+function welfareR(c, L, rho, eta, Tm)
+	R = 1./(1+rho).^(10.*(0:(Tm-1)))
+	A = L[1:Tm,:].*c[:,:].^(1-eta)
+  B = sum(A,2)'
+	W = (B*R/(1-eta))[1]
+  return W
+end
+
+function welfareD(c,L,rho,eta,Tm)
+  R = 1./(1+rho).^(10.*(0:(Tm-1)))
+  A = sum(L[1:Tm,:].*c[:,:],2)'
+  B = ((A.^(1-eta)*R)/(1-eta))
+  W = B[1]
+end
+
+function tax2welfare(tax, P, rho, eta, Tm; model="NICE")
+  if model == "NICE"
+    c = fromtax(tax, P, Tm)[1]
+    W = welfareN(c, P.L, rho, eta, Tm)
+  elseif model == "RICE"
+    c = fromtax(tax, P, Tm)[12]
+    W = welfareR(c,P.L,rho,eta,Tm)
+  elseif model == "DICE"
+    c = fromtax(tax, P, Tm)[12]
+    W = welfareD(c,P.L,rho,eta,Tm)
+  end
   return W
 end
 

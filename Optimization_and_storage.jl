@@ -68,7 +68,7 @@ include("$folder/NICE_Julia/createPrandom.jl") # quick way to run this!
 using NLopt
 idims = Int(max(nsample/2,1)) # bifurcates the random draws into two subsets
 
-n=tm-3
+n=2*tm-6
 
 
 count = 0 # keep track of number of iterations
@@ -80,7 +80,7 @@ model = "RICE"
 tax15to35 = zeros(3)
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
   tex = [tax15to35;x]
-  WW = tax2expectedwelfare(tex,PP,rho,eta,nu,Tm,tm,lm,idims,model="RICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
+  WW = tax2welfare(tax, PP[1], rho, eta, Tm; model="NICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
   global count
   count::Int += 1
   println("f_$count($x)")
