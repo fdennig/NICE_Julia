@@ -215,3 +215,11 @@ filenm = string(regime_select)
       k+=1
     end
   end
+
+
+### to save once all three have been created.
+# using DataFrames, DataArrays
+# cd("$(homedir())/Dropbox/ARBEIT/aRESEARCH/NICE_Julia/NICE Julia/Outputs/diffInit")
+# writetable("regularOPT.csv", regularP)
+# writetable("initZero.csv", initZero)
+# writetable("initPB.csv", initPB)
