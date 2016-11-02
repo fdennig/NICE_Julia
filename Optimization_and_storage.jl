@@ -89,13 +89,15 @@ end
 n= tm
 opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
 
-ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
-ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
-ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
+# ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
+# ub_1 = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[lm+2:tm+1]
+# ub_2 = maximum(squeeze(maximum(pb,2),2)[(idims+1):nsample,:],1)[lm+2:tm+1]
+
+ub = maximum(squeeze(maximum(pb,2),2)[1:idims,:],1)[2:tm+1]
 # lower bound is zero
 lower_bounds!(opt, zeros(n))
-upper_bounds!(opt, [ub_lm; ub_1; ub_2])
-
+#upper_bounds!(opt, [ub_lm; ub_1; ub_2])
+upper_bounds!(opt, ub)
 # Set maximization
 max_objective!(opt, welfaremax)
 
@@ -103,11 +105,11 @@ max_objective!(opt, welfaremax)
 ftol_rel!(opt,0.00000000000005)
 
 # Optimize! Initial guess defined above
-(expected_welfare,tax_vector,ret) = optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
+(expected_welfare,tax_vector,ret) = optimize(opt, ub.*0.5) #optimize(opt, [ub_lm; ub_1; ub_2].*0.5)
 
 # Extract the two tax vectors from the optimization object
 taxes_1 = tax_vector[1:tm]
-taxes_2 = [tax_vector[1:lm];tax_vector[tm+1:end]]
+taxes_2 = tax_vector[1:tm] #[tax_vector[1:lm];tax_vector[tm+1:end]]
 
 # Create storage objects
 if (model == "RICE") | (model == "DICE")
@@ -127,7 +129,7 @@ Y = Array(Float64, Tm, 12, nsample)
 Q = Array(Float64, Tm, 12, nsample)
 
 # Store data
-for i = 1:convert(Int,nsample/2)
+for i = 1:idims
   if (model == "RICE") | (model == "DICE")
     c[:,:,i] = fromtax(taxes_1,PP[i],Tm)[12]
   else
@@ -144,7 +146,7 @@ for i = 1:convert(Int,nsample/2)
   Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
   Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
 end
-for i = convert(Int,(nsample/2 + 1)):nsample
+for i = (idims+1):nsample
   if (model == "RICE") | (model == "DICE")
     c[:,:,i] = fromtax(taxes_2,PP[i],Tm)[12]
   else
