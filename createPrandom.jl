@@ -591,7 +591,6 @@ for i=1:nsample
 end
 
 # So calling PP[i]."variable" will call the relevant variable array/scalar for the ith random draw
-regime_select
 # END OF SECTION
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

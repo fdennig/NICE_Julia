@@ -249,7 +249,7 @@ function welfareR(c, L, rho, eta, Tm)
 	R = 1./(1+rho).^(10.*(0:(Tm-1)))
 	A = L[1:Tm,:].*c[:,:].^(1-eta)
   B = sum(A,2)'
-	W = (B*R/(1-eta))[1]
+	W = ((B*R)/(1-eta))[1]
   return W
 end
 
