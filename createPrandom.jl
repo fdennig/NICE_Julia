@@ -45,7 +45,29 @@ dparam_i = load("$folderData/NICE_Julia/Data/dparam_i.jld")
 # First, get means and standard deviations for random draws.
 # M for mean, sd for standard deviation
 # sd small or large
-if sd == "small"
+
+if isdefined(:sd) == false
+  # TFP
+  gy0M = dparam_i["gy0"][2]'
+  gy0sd = 10*ones(12)*0.004
+  # Decarbonization
+  sighisTM = dparam_i["sighisT"][2]'
+  sighisTsd = 10*ones(12)*0.004
+  # World Backstop Price
+  pwM = dparam_i["pw"][2]*1000
+  pwsd = 68
+  # Atmosphere to upper ocean transfer coefficient
+  TrM12M = dparam_i["TrM"][2][1,2]/100
+  TrM12sd = 10*0.01079
+  # Climate sensitivity
+  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
+  xi1sd = 1.4
+  # Coefficient on T^7 in damage function
+  psi7M = 0.082 # hardcoded originally
+  psi7sd = 10*0.028
+  # Elasticity of income wrt. damage
+  eeM = 0
+elseif sd == "small"
   # TFP
   gy0M = dparam_i["gy0"][2]'
   gy0sd = ones(12)*0.004
@@ -87,27 +109,6 @@ elseif sd == "large" # 10 times larger than "small"
   psi7sd = 10*0.028
   # Elasticity of income wrt. damage
   eeM = 0
-else
-  # TFP
-  gy0M = dparam_i["gy0"][2]'
-  gy0sd = 10*ones(12)*0.004
-  # Decarbonization
-  sighisTM = dparam_i["sighisT"][2]'
-  sighisTsd = 10*ones(12)*0.004
-  # World Backstop Price
-  pwM = dparam_i["pw"][2]*1000
-  pwsd = 68
-  # Atmosphere to upper ocean transfer coefficient
-  TrM12M = dparam_i["TrM"][2][1,2]/100
-  TrM12sd = 10*0.01079
-  # Climate sensitivity
-  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
-  xi1sd = 10*0.3912
-  # Coefficient on T^7 in damage function
-  psi7M = 0.082 # hardcoded originally
-  psi7sd = 10*0.028
-  # Elasticity of income wrt. damage
-  eeM = 0
 end
 
 
@@ -126,7 +127,11 @@ end
 
 using Distributions # required for some regime selections
 
-if regime_select == 0
+if isdefined(:regime_select) == false
+  z = zeros(nsample,29)
+  error("Select a regime!")
+
+elseif regime_select == 0
   # we just use the means for each sample draw
   nsample = 2
   z = zeros(nsample,29) # temp object to hold the random draws
@@ -334,11 +339,17 @@ elseif regime_select == 15
   z[:,1:12] = QQ[1:12,:]'
   z[:,29] = QQ[13,:]'
 
-
-else
-  z = zeros(nsample,29)
-  error("Select a regime!")
-
+elseif regime_select == 16
+    # we just use the means for each sample draw
+    nsample = 11
+    z = zeros(nsample,29) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM]
+    decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
+    Q = zeros(1,11)
+    d_xi1 = Normal(xi1M,xi1sd)
+    Q[1,:] = quantile(d_xi1,decs)
+    QQ = Q'
+    z[:,26] = QQ
 end
 
 DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29])
@@ -371,11 +382,13 @@ certainPARAMETERS = load("$folderData/NICE_Julia/Data/certainPARAMETERS.jld") # 
 
 # (for now, manually pull the certain parameter values from certainPARAMETERS.mat file)
 Th = certainPARAMETERS["Th"][2]
-if backstop_same == "Y"
-  RL = ones(1,12)
-elseif isdefined(:backstop_same) == false
+
+if isdefined(:backstop_same) == false
   RL = certainPARAMETERS["RL"][2]
-else RL = certainPARAMETERS["RL"][2]
+elseif backstop_same == "Y"
+  RL = ones(1,12)
+elseif backstop_same == "N"
+  RL = certainPARAMETERS["RL"][2]
 end
 du = certainPARAMETERS["du"][2] # could be randomized
 dd = certainPARAMETERS["dd"][2] # could be randomized

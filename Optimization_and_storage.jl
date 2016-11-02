@@ -5,10 +5,9 @@
 using HDF5, JLD
 # Set user name to run auxiliary files
 user = "francis" # or "francis" or "marc" as the case may be
-sd="small"
 #nsample = 50
 # Select the regime for parameter randomization
-regime_select = 0
+regime_select = 16
   # 0 = no randomization (just uses means)
   # 1 = total randomization
 
@@ -28,7 +27,7 @@ regime_select = 0
   # 14 = Deciles - High TFP and High ee vs. Low TFP and Low ee
   # 15 = Deciles - High TFP and Low ee vs. Low TFP and High ee
 
-  # 16 = TFP uncertainty
+  # 16 = DECILES of climate sensitivity
 
 # Define exogenous parameters
 
@@ -41,8 +40,8 @@ tm = 15 # (must be an integer) length of the tax vector we want to consider - TH
 backstop_same = "Y" # "N" is default - choose "Y" if we want all the countries to face the same backstop prices over time
 
 rho = 0.015 # PP[1].para[1] # discount rate
-eta = 1.5 # PP[1].para[3] # inequality aversion/time smoothing parameter (applied to per capita consumption by region, quintile and time period)
-nu = 1.5 # risk aversion parameter (applied over random draws)
+eta = 2 # PP[1].para[3] # inequality aversion/time smoothing parameter (applied to per capita consumption by region, quintile and time period)
+nu = 2 # risk aversion parameter (applied over random draws)
 
 # Now execute the whole code: select all and evaluate
 ###########################################################################################################################################################################################################
@@ -66,7 +65,7 @@ include("$folder/NICE_Julia/createPrandom.jl") # quick way to run this!
 
 # Optimization of welfare function using NLopt package
 using NLopt
-idims = Int(max(nsample/2,1)) # bifurcates the random draws into two subsets
+idims = Int(max(round(nsample/2),1)) # bifurcates the random draws into two subsets
 
 # 1. lm = 0
 lm = 0
