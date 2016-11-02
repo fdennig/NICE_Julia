@@ -76,7 +76,8 @@ count = 0 # keep track of number of iterations
 # Define function to be maximized (requires special format for NLopt package)
 model = "RICE"
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
-  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims,model="RICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
+#  WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims,model="RICE")[1] #change to model="RICE" or "DICE" for different levels of aggregation
+  WW = tax2welfare(x, PP[6], rho, eta, Tm, model="RICE")
   global count
   count::Int += 1
   println("f_$count($x)")
@@ -84,7 +85,8 @@ function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspeci
 end
 
 # Choose algorithm (gradient free method) and dimension of tax vector, tm+1 <= n <= Tm
-n = tax_length
+#n = tax_length
+n= tm
 opt = Opt(:LN_BOBYQA, n) # algorithm and dimension of tax vector, possible (derivative-free) algorithms: LN_COBYLA, LN_BOBYQA
 
 ub_lm = maximum(squeeze(maximum(pb,2),2),1)[2:lm+1]
