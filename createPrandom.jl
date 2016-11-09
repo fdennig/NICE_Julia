@@ -256,7 +256,7 @@ elseif regime_select == 95
   # Change gy0 to go from high to low in deciles
   decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
   # d_gy0 = MvNormal(vec(gy0M),diagm(gy0sd)) # generates normal distribution
-  QQ = zeros(12,10)
+  QQ = zeros(12,11)
   for i = 1:12
     QQ[i,:] = quantile(Normal(gy0M[i],gy0sd[i]),decs)
   end
@@ -284,7 +284,7 @@ elseif regime_select == 105
   # Change sighisT to go from high to low in deciles
   decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
   # d_sighisT = MvNormal(vec(sighisTM),diagm(sighisTsd)) # generates normal distribution
-  QQ = zeros(12,10)
+  QQ = zeros(12,11)
   for i = 1:12
     QQ[i,:] = quantile(Normal(sighisTM[i],sighisTsd[i]),decs)
   end
@@ -376,7 +376,7 @@ elseif regime_select == 16
     z = zeros(nsample,29) # temp object to hold the random draws
     z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM]
     decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
-    Q = zeros(1,11)
+    Q = zeros(1,10)
     d_xi1 = Normal(xi1M,xi1sd)
     Q[1,:] = quantile(d_xi1,decs)
     QQ = Q'
