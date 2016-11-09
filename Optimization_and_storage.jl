@@ -203,6 +203,17 @@ reslm = Results(regime_select,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_
 
 dataPlm = FrameFromResults(reslm, Tm, nsample, Regions)
 
+numer = (res.EWelfare - reslm.EWelfare)
+
+if model == "RICE"
+  denom = sum(res.PP[1].L[1,:].*res.c[1,:,1].^(-eta).*res.c[1,:,1])/sum(res.PP[1].L[1,:])
+elseif model == "DICE"
+  denom = (sum(res.PP[1].L[1,:].*res.c[1,:,1])/sum(res.PP[1].L[1,:]))^(-eta)
+else
+  error("you still haven't defined what happens in the NICE model")
+end
+
+numer/(denom*100)
 # # 3. lm = tm
 # lm= tm
 # tax_length = 2*tm - lm

@@ -8,7 +8,7 @@ user = "francis" # or "francis" or "marc" as the case may be
 regime_select = 0
 idims = 1
 Tm = 32
-tm = Tm-1
+tm = 15 #Tm-1
 lm=0
 backstop_same = "Y" # "N"
 model = "RICE"
@@ -148,11 +148,11 @@ filenm = string(regime_select)
       k+=1
     end
   end
-  jldopen("$(pwd())/Outputs/BAU/BAUparameters.jld", "w") do file
+  jldopen("$(pwd())/Outputs/BAU/BAUparameterstm15.jld", "w") do file
       write(file, "PP", PP[1])
   end
-  jldopen("$(pwd())/Outputs/BAU/BAU.jld", "w") do file
+  jldopen("$(pwd())/Outputs/BAU/BAUtm15.jld", "w") do file
       write(file, "BAU", res)
   end
 
-  writetable("$(pwd())/Outputs/BAU/BAU.csv", dataP)
+  writetable("$(pwd())/Outputs/BAU/BAUtm15.csv", dataP)
