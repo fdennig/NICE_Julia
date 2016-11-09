@@ -31,16 +31,18 @@
 
 # Load the dparam_i.mat file to obtain the raw data
 
-if user == "francis"
-  folderData = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
-elseif user == "joshua"
-  folderData = "/Users/joshuabernstein/Dropbox"
-elseif user == "marc"
-  folderData = "/Users/mfleur/Dropbox/RICE_for_Simon (1)/Julia"
-else error("wrong user")
-end
+# if user == "francis"
+#   folderData = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
+# elseif user == "joshua"
+#   folderData = "/Users/joshuabernstein/Dropbox"
+# elseif user == "marc"
+#   folderData = "/Users/mfleur/Dropbox/RICE_for_Simon (1)/Julia"
+# else error("wrong user")
+# end
 
-dparam_i = load("$folderData/NICE_Julia/Data/dparam_i.jld")
+folderData = "$(pwd())/Data"
+
+dparam_i = load("$folderData/dparam_i.jld")
 # to call parameter values, use the syntax variable = dparam_i["variable"][2], except for q and tol where the '[2]' should be dropped
 # First, get means and standard deviations for random draws.
 # M for mean, sd for standard deviation
@@ -60,7 +62,7 @@ if isdefined(:sd) == false
   TrM12M = dparam_i["TrM"][2][1,2]/100
   TrM12sd = 10*0.01079
   # Climate sensitivity
-  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
+  xi1M = 3 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus and now 3.0
   xi1sd = 1.4
   # Coefficient on T^7 in damage function
   psi7M = 0.082 # hardcoded originally
@@ -81,7 +83,7 @@ elseif sd == "small"
   TrM12M = dparam_i["TrM"][2][1,2]/100
   TrM12sd = 0.01079
   # Climate sensitivity
-  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
+  xi1M = 3 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus and now 3.0
   xi1sd = 0.3912
   # Coefficient on T^7 in damage function
   psi7M = 0.082 # hardcoded originally
@@ -102,7 +104,7 @@ elseif sd == "large" # 10 times larger than "small"
   TrM12M = dparam_i["TrM"][2][1,2]/100
   TrM12sd = 10*0.01079
   # Climate sensitivity
-  xi1M = 3.2 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus
+  xi1M = 3 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus and now 3.0
   xi1sd = 10*0.3912
   # Coefficient on T^7 in damage function
   psi7M = 0.082 # hardcoded originally
@@ -246,6 +248,20 @@ elseif regime_select == 9
   end
   z[:,1:12] = QQ'
 
+elseif regime_select == 95
+  # define preset regime: Deciles of TFP (all else fixed at means)
+  nsample = 11 # for deciles
+  z = zeros(nsample,29) # temp object to hold the random draws
+  z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
+  # Change gy0 to go from high to low in deciles
+  decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
+  # d_gy0 = MvNormal(vec(gy0M),diagm(gy0sd)) # generates normal distribution
+  QQ = zeros(12,10)
+  for i = 1:12
+    QQ[i,:] = quantile(Normal(gy0M[i],gy0sd[i]),decs)
+  end
+  z[:,1:12] = QQ'
+
 elseif regime_select == 10
   # define preset regime: Deciles of decarb rates (all else fixed at means)
   nsample = 10 # for deciles
@@ -253,6 +269,20 @@ elseif regime_select == 10
   z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
   # Change sighisT to go from high to low in deciles
   decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
+  # d_sighisT = MvNormal(vec(sighisTM),diagm(sighisTsd)) # generates normal distribution
+  QQ = zeros(12,10)
+  for i = 1:12
+    QQ[i,:] = quantile(Normal(sighisTM[i],sighisTsd[i]),decs)
+  end
+  z[:,13:24] = QQ'
+
+elseif regime_select == 105
+  # define preset regime: Deciles of decarb rates (all else fixed at means)
+  nsample = 11 # for deciles
+  z = zeros(nsample,29) # temp object to hold the random draws
+  z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM] # fills up with means before making changes
+  # Change sighisT to go from high to low in deciles
+  decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
   # d_sighisT = MvNormal(vec(sighisTM),diagm(sighisTsd)) # generates normal distribution
   QQ = zeros(12,10)
   for i = 1:12
@@ -339,7 +369,20 @@ elseif regime_select == 15
   z[:,1:12] = QQ[1:12,:]'
   z[:,29] = QQ[13,:]'
 
+
 elseif regime_select == 16
+    # we just use the means for each sample draw
+    nsample = 10
+    z = zeros(nsample,29) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM]
+    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
+    Q = zeros(1,11)
+    d_xi1 = Normal(xi1M,xi1sd)
+    Q[1,:] = quantile(d_xi1,decs)
+    QQ = Q'
+    z[:,26] = QQ
+
+elseif regime_select == 165
     # we just use the means for each sample draw
     nsample = 11
     z = zeros(nsample,29) # temp object to hold the random draws
@@ -367,7 +410,7 @@ DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,2
 
 # Load the certainPARAMETERS.mat file
 
-certainPARAMETERS = load("$folderData/NICE_Julia/Data/certainPARAMETERS.jld") # Adjust for User: JOSHUA
+certainPARAMETERS = load("$folderData/certainPARAMETERS.jld") # Adjust for User: JOSHUA
 
 # to call parameter values, use the syntax 'variable = certainPARAMETERS["variable"][2]'
 
@@ -606,6 +649,5 @@ end
 # So calling PP[i]."variable" will call the relevant variable array/scalar for the ith random draw
 regime_select
 # END OF SECTION
-
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
