@@ -291,7 +291,7 @@ function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NIC
     end
     D_ = zeros(Tm,12,5,nsample)
     for i = 1:nsample
-      D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])
+      D_[:,:,:,i] = D[:,:,:,i].*cat(3,P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:],P[i].L[1:Tm,:])/5
     end
     D = D_
     # Now sum over quintiles to get per capita discounted utility at time t, in region I, in random draw n
@@ -378,7 +378,7 @@ function VarsFromTaxes(taxes_1, taxes_2, PP, nsample)
   Q = Array(Float64, Tm, 12, nsample)
 
   # Store data
-  for i = 1:convert(Int,nsample/2)
+  for i = 1:Int(max(round(nsample/2),1))
     if (model == "RICE") | (model == "DICE")
       c[:,:,i] = fromtax(taxes_1,PP[i],Tm)[12]
     else
@@ -395,7 +395,7 @@ function VarsFromTaxes(taxes_1, taxes_2, PP, nsample)
     Y[:,:,i] = fromtax(taxes_1,PP[i],Tm)[10]
     Q[:,:,i] = fromtax(taxes_1,PP[i],Tm)[11]
   end
-  for i = convert(Int,(nsample/2 + 1)):nsample
+  for i = (Int(max(round(nsample/2),1))+1):nsample
     if (model == "RICE") | (model == "DICE")
       c[:,:,i] = fromtax(taxes_2,PP[i],Tm)[12]
     else
@@ -415,7 +415,35 @@ function VarsFromTaxes(taxes_1, taxes_2, PP, nsample)
   return c, K, T, E, M, mu, lam, D, AD, Y, Q
 end
 
-function FrameFromResults(res, Tm, nsample, Regions)
+# Create storage object
+type Results
+  regime
+  nsample
+  Tm
+  tm
+  lm
+  Regions
+  taxes_1
+  taxes_2
+  EWelfare
+  c
+  K
+  T
+  E
+  M
+  mu
+  lam
+  D
+  AD
+  Y
+  Q
+  rho
+  eta
+  nu
+  PP
+end
+
+function FrameFromResults(res, Tm, nsample, Regions, idims)
   # set up dataframe with periods, regions, State
   if length(size(res.c)) > 2
     dataP = DataFrame(ID = 1:(Tm*12*nsample), State = reshape(repmat(collect(1:nsample)',Tm*12),Tm*12*nsample,1)[:,1], Region = repmat(reshape(repmat(Regions,Tm),Tm*12,1),nsample)[:,1], Year = repmat(repmat(10*(0:Tm-1)+2005,12),nsample))
@@ -454,4 +482,30 @@ function FrameFromResults(res, Tm, nsample, Regions)
     end
   end
   return dataP
+end
+
+immutable PP_
+  para # 1x4 vector, constant across nsample, regions, time
+  L # TxI array
+  A # TxI array
+  sigma # TxI array
+  th1 # nTxI array
+  th2 # scalar (constant)
+  pb # TxI array
+  EL # TxI array
+  Fex # 1xT array
+  TrM # 3x3 array
+  xi # 1x7 array
+  TrT # 2x2 array
+  psi # 3xI array
+  T0 # 1x2 array (constant)
+  T1 # 1x2 array (constant)
+  M0 # 1x3 array (constant)
+  M1 #1x3 array (constant)
+  K0 # 1xI array
+  E0 # 1x12 vector with 2005 emissions
+  R # 1xT array
+  q # 5x12 array (constant)
+  d # 5x12 array
+  tol # scalar (constant)
 end

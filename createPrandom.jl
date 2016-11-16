@@ -51,45 +51,24 @@ dparam_i = load("$folderData/dparam_i.jld")
 if isdefined(:sd) == false
   # TFP
   gy0M = dparam_i["gy0"][2]'
-  gy0sd = 10*ones(12)*0.004
+  gy0sd = ones(12)*0.0059 #matches Dietz Gollier Kessler, even though our means are much larger Dietz Asheim had 0.004
   # Decarbonization
   sighisTM = dparam_i["sighisT"][2]'
-  sighisTsd = 10*ones(12)*0.004
+  sighisTsd = ones(12)*0.0064 #matches DGK, our means a bit larger. Dietz Asheim 0.004
   # World Backstop Price
   pwM = dparam_i["pw"][2]*1000
-  pwsd = 68
+  pwsd = 150 # matches DGK, our mean is about right, Dietz Asheim has 68
   # Atmosphere to upper ocean transfer coefficient
-  TrM12M = dparam_i["TrM"][2][1,2]/100
-  TrM12sd = 10*0.01079
+  TrM12M = dparam_i["TrM"][2][1,2]/100 #DGK have 0.06835
+  TrM12sd = 0.01079  #DGK have 0.020
   # Climate sensitivity
-  xi1M = 3 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus and now 3.0
+  xi1M = 3 #2.9 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus and now 2.9 to match DGK
   xi1sd = 1.4
   # Coefficient on T^7 in damage function
-  psi7M = 0.082 # hardcoded originally
-  psi7sd = 10*0.028
-  # Elasticity of income wrt. damage
-  eeM = 0
-elseif sd == "small"
-  # TFP
-  gy0M = dparam_i["gy0"][2]'
-  gy0sd = ones(12)*0.004
-  # Decarbonization
-  sighisTM = dparam_i["sighisT"][2]'
-  sighisTsd = ones(12)*0.004
-  # World Backstop Price
-  pwM = dparam_i["pw"][2]*1000
-  pwsd = 68
-  # Atmosphere to upper ocean transfer coefficient
-  TrM12M = dparam_i["TrM"][2][1,2]/100
-  TrM12sd = 0.01079
-  # Climate sensitivity
-  xi1M = 3 # hardcoded originally, changed from 3.8 to 3.2 to correspond to Nordhaus and now 3.0
-  xi1sd = 0.3912
-  # Coefficient on T^7 in damage function
-  psi7M = 0.082 # hardcoded originally
+  psi7M = 0.082 # From Dietz Asheim
   psi7sd = 0.028
-  # Elasticity of income wrt. damage
-  eeM = 0
+  # Elasticity of income wrt. damage is currently not uncertain, so we define it elsewhere
+  #eeM = 1
 elseif sd == "large" # 10 times larger than "small"
   # TFP
   gy0M = dparam_i["gy0"][2]'
@@ -110,7 +89,7 @@ elseif sd == "large" # 10 times larger than "small"
   psi7M = 0.082 # hardcoded originally
   psi7sd = 10*0.028
   # Elasticity of income wrt. damage
-  eeM = 0
+  eeM = 1
 end
 
 
@@ -152,11 +131,11 @@ elseif regime_select == 1
     z[:,13:24] = rand(d_sighisT,nsample)'
 
     # Atmosphere to upper ocean transfer coefficient - TrM12 - normal distribution truncated on [0,1] - perhaps Beta is better, need to calculate parameters
-    d_TrM12 = Beta((TrM12M/(1-TrM12M)),1) # Normal(TrM12M,TrM12sd)
+    d_TrM12 = Beta((TrM12M/(1-TrM12M)),1) # Normal(TrM12M,TrM12sd) DGK use normal truncated below 0.1419.
     z[:,25] = min(max(rand(d_TrM12,nsample)',0),1)
 
     # Climate Sensitivity - xi1 - normal distribution, truncated at 0 !!!!!!!!!!!!!!!
-    d_xi1 = Normal(xi1M,xi1sd)
+    d_xi1 = Normal(xi1M,xi1sd) #DGK use log-logistic
     z[:,26] = max(rand(d_xi1,nsample),0)
 
     # Coefficient on T^7 in damage function - psi7 - normal distribution, truncated on [0,∞)
@@ -371,11 +350,11 @@ elseif regime_select == 15
 
 
 elseif regime_select == 16
-    # we just use the means for each sample draw
-    nsample = 10
+    # we just use the means for each sample draw except for climate sensitivity.
+    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
+    nsample = length(decs)
     z = zeros(nsample,29) # temp object to hold the random draws
     z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM]
-    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
     Q = zeros(1,10)
     d_xi1 = Normal(xi1M,xi1sd)
     Q[1,:] = quantile(d_xi1,decs)
@@ -384,10 +363,10 @@ elseif regime_select == 16
 
 elseif regime_select == 165
     # we just use the means for each sample draw
-    nsample = 11
+    decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
+    nsample = length(decs)
     z = zeros(nsample,29) # temp object to hold the random draws
     z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM]
-    decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
     Q = zeros(1,11)
     d_xi1 = Normal(xi1M,xi1sd)
     Q[1,:] = quantile(d_xi1,decs)
@@ -396,6 +375,9 @@ elseif regime_select == 165
 end
 
 DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29])
+
+#Region Labels
+Regions = ["USA", "OECD Europe", "Japan", "Russia", "Non-Russia Eurasia", "China", "India", "Middle East", "Africa", "Latin America", "OHI", "Other non-OECD Asia"]'
 
 # END OF SECTION
 
@@ -588,9 +570,6 @@ psi = permutedims(psi_,[3 1 2])
 ######################################################################################################################################################################################
 
 # Define remaining parameters
-rho = certainPARAMETERS["rho"][2]
-delta = certainPARAMETERS["delta"][2]
-eta = certainPARAMETERS["eta"][2]
 T0 = certainPARAMETERS["T0"][2]
 T1 = certainPARAMETERS["T1"][2]
 M0 = certainPARAMETERS["M0"][2]
@@ -610,7 +589,7 @@ end
 # NEED TO FIGURE OUT HOW TO CLOSE THE .jld FILES WE HAVE OPEN!!
 
 # Define para as the first four parameters in P - [rho, delta, eta, gamma]
-para = [rho,delta,eta,gamma]'
+para = [certainPARAMETERS["rho"][2],certainPARAMETERS["delta"][2],certainPARAMETERS["eta"][2],gamma]'
 # To assist with coding elsewhere, now build an object, PP, that contains a P object for each random draw
 
 immutable PP_
@@ -645,6 +624,8 @@ for i=1:nsample
   PP[i] = PP_(para,L[i,:,:]',tfp[i,:,:]',sigma[i,:,:]',th1[i,:,:]',th2,pb[i,:,:]',EL',Fex,TrM[i,:,:],xi[i,:]',TrT[i,:,:],psi[i,:,:],T0,T1,M0,M1,K0,E0,R,q,d[i,:,:],tol)
   # note the transposes so that the relevant matrices are now in TxI format for easy transfer to following functions/code
 end
+#Region Labels
+Regions = ["USA", "OECD Europe", "Japan", "Russia", "Non-Russia Eurasia", "China", "India", "Middle East", "Africa", "Latin America", "OHI", "Other non-OECD Asia"]'
 
 # So calling PP[i]."variable" will call the relevant variable array/scalar for the ith random draw
 regime_select
