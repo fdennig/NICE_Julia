@@ -47,7 +47,7 @@ eeM = 1 # elasticity of damage with respect to income
 
 regimes = [95 105 165]
 names = ["TFP" "Decarb" "Csensi"]
-l=2095
+l=2055
 
 model = "NICE"
 res = load("$(folder)/Outputs/Optima/meanOptimum$(model).jld", "res")
