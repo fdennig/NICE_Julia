@@ -55,7 +55,7 @@ include("$folder/Function_definitions.jl")
 # 3. Run Function_defitions_for_createPrandom_and_parameters2consumption.jl AND createPrandom_and_parameters2consumption.jl first to build necessary parameters!
 include("$folder/createPrandom.jl") # quick way to run this!
 
-PP = createP(0; eeM = exi)
+PP = createP(regime_select; eeM = exi)
 nsample = size(PP)[1]
 pb = zeros(nsample,12,60)
 for i=1:nsample
@@ -75,7 +75,7 @@ tax_length = 2*tm - lm
 count = 0 # keep track of number of iterations
 
 # Define function to be maximized (requires special format for NLopt package)
-model = "NICE"
+model = "DICE"
 function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
   WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims,model="$model")[1] #change to model="RICE" or "DICE" for different levels of aggregation
   global count
@@ -243,9 +243,9 @@ dataP = FrameFromResults(res, Tm, nsample, Regions, idims)
 
 # SS = Array(Results,3)
 # SS = [res reslm restm]
-# jldopen("$(pwd())/Outputs/Optima/meanOptimum$(model).jld", "w") do file
-#     write(file, "res", res)
-# end
+jldopen("$(pwd())/Outputs/Optima/meanOptimum$(model).jld", "w") do file
+    write(file, "res", res)
+end
 # writetable("$(pwd())/Outputs/Optima/meanOptimum$(model).csv", dataP)
 # dataP
 # dataPlm
