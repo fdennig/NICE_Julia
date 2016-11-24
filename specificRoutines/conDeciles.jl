@@ -60,14 +60,14 @@ for i=1:3
   idims = Int(max(round(nsample/2),1))
   expected_welfare = tax2expectedwelfare(tax_vector,PP,rho,eta,nu,Tm,tm,lm,idims,model="$model")[1]
 
-  c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(tax_vector, tax_vector, PP, nsample)
+  c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(tax_vector, tax_vector, PP, nsample, model="$model")
 
   # create Results structure
   resDist = Results(regime_select,nsample,Tm,tm,lm,Regions,res.taxes_1,res.taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
   # create dataframe of period by region by state data
   global dataDist = FrameFromResults(resDist, Tm, nsample, Regions, idims)
   byState = groupby(dataDist,:State) #groups by state
-  fin = hcat([by(df, :Year, dg -> (sum((dg[:cq1].^(1-eta)+dg[:cq2].^(1-eta)+dg[:cq3].^(1-eta)+dg[:cq4].^(1-eta)+dg[:cq5].^(1-eta)).*dg[:L]/5)./sum(dg[:L])).^(1/(1-eta))   )[:x1] for df in byState]...)
+  fin = hcat([by(df, :Year, dg -> (dot(dg[:cq1].^(1-eta)+dg[:cq2].^(1-eta)+dg[:cq3].^(1-eta)+dg[:cq4].^(1-eta)+dg[:cq5].^(1-eta),dg[:L]/5)./sum(dg[:L])).^(1/(1-eta)) )[:x1] for df in byState]...)
   #yields a Tm*nsample dataArray with the EDEs for each time period
   EDE = reshape(repmat(convert(Array, fin),12,1),Tm*nsample*12,1)[:,1]  #creates a Tm*nsample*12 long vector 
   dataDist[:EDE] = EDE #puts into the dataframe
@@ -105,14 +105,14 @@ for i=1:3
   idims = Int(max(round(nsample/2),1))
   expected_welfare = tax2expectedwelfare(tax_vector,PP,rho,eta,nu,Tm,tm,lm,idims,model="$model")[1]
 
-  c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(tax_vector, tax_vector, PP, nsample)
+  c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(tax_vector, tax_vector, PP, nsample, model="DICE")
 
   # create Results structure
   resDist = Results(regime_select,nsample,Tm,tm,lm,Regions,res.taxes_1,res.taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
   # create dataframe of period by region by state data
   global dataDist = FrameFromResults(resDist, Tm, nsample, Regions, idims)
   byState = groupby(dataDist,:State) #groups by state
-  fin = hcat([by(df, :Year, dg -> (sum((dg[:c].^(1-eta).*dg[:L]))./sum(dg[:L])).^(1/(1-eta)))[:x1] for df in byState]...)
+  fin = hcat([by(df, :Year, dg -> dot(dg[:c],dg[:L])./sum(dg[:L]))[:x1] for df in byState]...)
   #yields a Tm*nsample dataArray with the EDEs for each time period
   EDE = reshape(repmat(convert(Array, fin),12,1),Tm*nsample*12,1)[:,1]  #creates a Tm*nsample*12 long vector 
   dataDist[:EDE] = EDE #puts into the dataframe

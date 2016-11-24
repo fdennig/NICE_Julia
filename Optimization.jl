@@ -87,7 +87,9 @@ function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspeci
   WW = tax2expectedwelfare(x,PP,rho,eta,nu,Tm,tm,lm,idims,model="$model")[1] #change to model="RICE" or "DICE" for different levels of aggregation
   global count
   count::Int += 1
-  println("f_$count($x)")
+  if count%100 == 0
+    println("f_$count($x)")
+  end
   return WW
 end
 
@@ -115,7 +117,7 @@ ftol_rel!(opt,0.00000000000005)
 taxes_a = tax_vector[1:tm]
 taxes_b = [tax_vector[1:lm];tax_vector[tm+1:end]]
 
-c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(taxes_a, taxes_b, PP, nsample)
+c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(taxes_a, taxes_b, PP, nsample, model="$model")
 
 TAX = maximum(PP[1].pb[1:Tm,:],2)[:,1]
 TAX[1] = 0
@@ -175,7 +177,7 @@ dataP = FrameFromResults(res, Tm, nsample, Regions, idims)
 # taxes_a = tax_vector[1:tm]
 # taxes_b = [tax_vector[1:lm];tax_vector[tm+1:end]]
 #
-# c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(taxes_a, taxes_b, PP, nsample)
+# c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(taxes_a, taxes_b, PP, nsample, model="$model")
 #
 # TAX = maximum(PP[1].pb[1:Tm,:],2)[:,1]
 # TAX[1] = 0
@@ -232,7 +234,7 @@ dataP = FrameFromResults(res, Tm, nsample, Regions, idims)
 # taxes_a = tax_vector[1:tm]
 # taxes_b = [tax_vector[1:lm];tax_vector[tm+1:end]]
 #
-# c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(taxes_a, taxes_b, PP, nsample)
+# c, K, T, E, M, mu, lam, D, AD, Y, Q = VarsFromTaxes(taxes_a, taxes_b, PP, nsample, model="$model")
 #
 # TAX = maximum(PP[1].pb[1:Tm,:],2)[:,1]
 # TAX[1] = 0

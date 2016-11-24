@@ -1,6 +1,6 @@
 # Function Definitions required to run createPrandom_and_parameters2consumption
 
-function backstop(Th,RL,pw,du,dd,tau)
+function backstop(Th,RL,pw,du,dd,tau,nsample)
   #creates the nsample,12,60 array of the backstop price
   #inputs:
   #   Th (scalar): initial to final backstop price ratio
@@ -24,7 +24,7 @@ function backstop(Th,RL,pw,du,dd,tau)
   return pb
 end
 
-function sig(gT,delsig,sighisT,adj15,Y0,E0)
+function sig(gT,delsig,sighisT,adj15,Y0,E0,nsample)
   #creates the nsample,12,60 array of (unmitigated/BAU) emissions to output ratio
   #inputs:
   #   gT
@@ -45,7 +45,7 @@ end
 # T = 60
 # compdelsig = ((1.-broadcast(.^,1-delsig,[2:T])')./delsig).-1
 # compdelsig[1,5]
-function population(Pop0,poprates)
+function population(Pop0,poprates,nsample)
   T = 60
   I = 12
   L = zeros(nsample,I,T) # note order of dimensions
@@ -69,7 +69,7 @@ function forcingEx(Fex2000,Fex2100)
   return Fex
 end
 
-function tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0)
+function tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0,nsample)
   T = 60
   I = 12
   tfp = zeros(nsample,I,T) # note order of dimensions
@@ -359,7 +359,7 @@ function welfare2c_bar(W, L, rho, eta, nu, Tm)
   return cbar
 end
 
-function VarsFromTaxes(taxes_1, taxes_2, PP, nsample)
+function VarsFromTaxes(taxes_1, taxes_2, PP, nsample; model = "NICE")
   # Create storage objects
   if (model == "RICE") | (model == "DICE")
     c = Array(Float64, Tm, 12, nsample)
@@ -484,28 +484,29 @@ function FrameFromResults(res, Tm, nsample, Regions, idims)
   return dataP
 end
 
+# Define PP_ as the type that will hold the parameters
 immutable PP_
-  para # 1x4 vector, constant across nsample, regions, time
-  L # TxI array
-  A # TxI array
-  sigma # TxI array
-  th1 # nTxI array
-  th2 # scalar (constant)
-  pb # TxI array
-  EL # TxI array
-  Fex # 1xT array
-  TrM # 3x3 array
-  xi # 1x7 array
-  TrT # 2x2 array
-  psi # 3xI array
-  T0 # 1x2 array (constant)
-  T1 # 1x2 array (constant)
-  M0 # 1x3 array (constant)
-  M1 #1x3 array (constant)
-  K0 # 1xI array
-  E0 # 1x12 vector with 2005 emissions
-  R # 1xT array
-  q # 5x12 array (constant)
-  d # 5x12 array
-  tol # scalar (constant)
+  para::Array{Float64,2} # 1x4 vector, constant across nsample, regions, time
+  L::Array{Float64,2} # TxI array
+  A::Array{Float64} # TxI array
+  sigma::Array{Float64} # TxI array
+  th1::Array{Float64} # TxI array
+  th2::Float64 # scalar (constant)
+  pb::Array{Float64}# TxI array
+  EL::Array{Float64} # TxI array
+  Fex::Array{Float64} # 1xT array
+  TrM::Array{Float64} # 3x3 array
+  xi::Array{Float64} # 1x7 array
+  TrT::Array{Float64} # 2x2 array
+  psi::Array{Float64} # 3xI array
+  T0::Array{Float64} # 1x2 array (constant)
+  T1::Array{Float64} # 1x2 array (constant)
+  M0::Array{Float64} # 1x3 array (constant)
+  M1::Array{Float64} #1x3 array (constant)
+  K0::Array{Float64} # 1xI array
+  E0::Array{Float64} # 1x12 vector with 2005 emissions
+  R::Array{Float64} # 1xT array
+  q::Array{Float64} # 5x12 array (constant)
+  d::Array{Float64} # 5x12 array
+  tol::Float64 # scalar (constant)
 end
