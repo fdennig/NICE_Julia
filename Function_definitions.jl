@@ -484,7 +484,22 @@ function FrameFromResults(res, Tm, nsample, Regions, idims)
   return dataP
 end
 
-# Define PP_ as the type that will hold the parameters
+# Define Deep as the type object that will hold all the random parameter draws in createP
+type Deep
+  gy0
+  sighisT
+  TrM12
+  xi1
+  psi7
+  pw
+  ee
+  psi2
+end
+
+#Region Labels
+Regions = ["USA", "OECD Europe", "Japan", "Russia", "Non-Russia Eurasia", "China", "India", "Middle East", "Africa", "Latin America", "OHI", "Other non-OECD Asia"]'
+
+# Define PP_ as the type that will hold the parameters returned by creatP
 immutable PP_
   para::Array{Float64,2} # 1x4 vector, constant across nsample, regions, time
   L::Array{Float64,2} # TxI array

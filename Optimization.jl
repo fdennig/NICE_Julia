@@ -3,10 +3,7 @@
 
 # Preliminaries
 using HDF5, JLD
-# Set user name to run auxiliary files
-user = "francis" # or "francis" or "marc" as the case may be
-#sd = "small"
-#nsample = 50
+
 # Select the regime for parameter randomization
 regime_select = 0
   # 0 = no randomization (just uses means)
@@ -46,32 +43,28 @@ backstop_same = "Y" # "N" is default - choose "Y" if we want all the countries t
 rho = 0.015 # PP[1].para[1] # discount rate
 eta = 2 # PP[1].para[3] # inequality aversion/time smoothing parameter (applied to per capita consumption by region, quintile and time period)
 nu = 2 # risk aversion parameter (applied over random draws)
-eeM = 1 # elasticity of damage with respect to income
+exi = 1 # elasticity of damage with respect to income
 # Now execute the whole code: select all and evaluate
 ###########################################################################################################################################################################################################
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-# if user == "francis"
-#   folder = "/Users/francis/Dropbox/ARBEIT/aRESEARCH/NICE_Julia"
-# elseif user == "joshua"
-#   folder = "/Users/joshuabernstein/Dropbox"
-# elseif user == "marc"
-#   folder = "/Users/mfleur/Dropbox/RICE_for_Simon (1)/Julia"
-# else error("wrong user")
-# end
 
 folder = pwd()
 
 # Run Function Definitions File
 include("$folder/Function_definitions.jl")
-
 # 3. Run Function_defitions_for_createPrandom_and_parameters2consumption.jl AND createPrandom_and_parameters2consumption.jl first to build necessary parameters!
 include("$folder/createPrandom.jl") # quick way to run this!
+
+PP = createP(0; eeM = exi)
+nsample = size(PP)[1]
+pb = zeros(nsample,12,60)
+for i=1:nsample
+  pb[i,:,:] = PP[i].pb'
+end
 
 # Optimization of welfare function using NLopt package
 using NLopt
 idims = Int(max(round(nsample/2),1)) # bifurcates the random draws into two subsets
-
 
 #######################################################################################
 #learning happens instantly. you know from period one which learning branch you are on
@@ -250,10 +243,10 @@ dataP = FrameFromResults(res, Tm, nsample, Regions, idims)
 
 # SS = Array(Results,3)
 # SS = [res reslm restm]
-jldopen("$(pwd())/Outputs/Optima/meanOptimum$(model).jld", "w") do file
-    write(file, "res", res)
-end
-writetable("$(pwd())/Outputs/Optima/meanOptimum$(model).csv", dataP)
+# jldopen("$(pwd())/Outputs/Optima/meanOptimum$(model).jld", "w") do file
+#     write(file, "res", res)
+# end
+# writetable("$(pwd())/Outputs/Optima/meanOptimum$(model).csv", dataP)
 # dataP
 # dataPlm
 # dataPtm
