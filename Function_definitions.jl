@@ -260,6 +260,10 @@ function welfareD(c,L,rho,eta,Tm)
   W = B[1]
 end
 
+function W2EW(x,nu,eta)
+  mean(((x.(1-eta)).^(1/(1-eta))).^(1-nu)./(1-nu))
+end
+
 function tax2welfare(tax, P, rho, eta, Tm; model="NICE")
   if model == "NICE"
     c = fromtax(tax, P, Tm)[1]
@@ -275,6 +279,7 @@ function tax2welfare(tax, P, rho, eta, Tm; model="NICE")
 end
 
 function tax2expectedwelfare(tax, P, rho, eta, nu, Tm, tm, lm, idims; model="NICE")
+  nsample=length(P)
   if model == "NICE"
     c = zeros(Tm,12,5,nsample) # will contain per capita consumption at time t, in region I, in quintile q, for random draw n
     for i = 1:idims

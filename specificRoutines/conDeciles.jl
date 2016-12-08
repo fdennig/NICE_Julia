@@ -5,39 +5,14 @@ folder = pwd()
 # Run Function Definitions File
 include("$folder/Function_definitions.jl")
 
-# 3. Run Function_defitions_for_createPrandom_and_parameters2consumption.jl AND createPrandom_and_parameters2consumption.jl first to build necessary parameters!
-# quick way to run this!
-
-# 0 = no randomization (just uses means)
-# 1 = total randomization
-
-# 2 = High initial TFP growth vs. Low initial TFP growth
-# 3 = High initial decarbonization rate vs. Low initial decarbonization rate
-# 4 = High elasticity of income wrt damage vs. Low elasticity of income wrt damage
-# 5 = High climate sensitivity vs. Low climate sensitivity
-# 6 = High atmosphere to upper ocean transfer coefficient vs. Low atmosphere to upper ocean transfer coefficient
-# 7 = High initial world backstop price vs. Low initial world backstop price
-# 8 = High T7 coefficient vs. Low T7 coefficient
-
-# 9 = Deciles of TFP (all else fixed at means) (nsample = 10)
 # 95 same as 9, but includes median (nsample = 11)
-# 10 = Deciles of decarbonization rates (all else fixed at means) (nsample = 10)
 # 105 same as 10, but includes medial (nsample = 11)
-# 11 = Deciles - High TFP and High decarb vs. Low TFP and Low decarb (technology spillovers?)
-# 12 = Deciles - High TFP and Low decarb vs. Low TFP and High decarb (substitutable tech?)
-# 13 = Deciles of elasticity of income wrt damage (ee)
-# 14 = Deciles - High TFP and High ee vs. Low TFP and Low ee
-# 15 = Deciles - High TFP and Low ee vs. Low TFP and High ee
-
-# 16 = DECILES of climate sensitivity
 # 165 same as 16, but includes medial (nsample = 11)
+# 175  deciles of quadratic damage coefficient
 Tm = 32
-# Time period we want to consider, Tm <= 60
 tm = 18
 lm = tm
 tax_length = 2*tm - lm
-
-
 backstop_same = "Y" # "N" is default - choose "Y" if we want all the countries to face the same backstop prices over time
 
 rho = 0.015 # PP[1].para[1] # discount rate
