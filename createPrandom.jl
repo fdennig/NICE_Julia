@@ -58,18 +58,20 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   psi1 = certainPARAMETERS["psi1"][2] # mean values
   psiMM = [psi1[1:2,:];ones(12)'.*psi7M]
   mean_dam = damage(2.5,psiMM)./(1+damage(2.5,psiMM))
+  # Crate: convergence rate of TFP
+  CrateM = dparam_i["Crate"][2]
 
   # GENERAL RANDOMIZATION CODE FOR THE 29(?) VARIABLES WE WANT TO RANDOMIZE
 
   if regime_select == 0
     # we just use the means for each sample draw
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)]
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
   elseif regime_select == 1
       # total randomization
-      z = zeros(nsample,41) # temp object to hold the random draws
+      z = zeros(nsample,42) # temp object to hold the random draws
 
       # Initial TFP growth rate (12, by region) - gy0 - NO RANDOMIZATION
       d_gy0 = MvNormal(vec(gy0M),diagm(gy0sd))
@@ -101,12 +103,17 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
 
       # quadratic damage coefficients (not random here yet)
       z[:,30:41] = repmat(psi1[2,:]',nsample)
+    
+      # Crate: Beta distribution with alpha=2 and beta=18 (mean 0.1)
+      d_Crate = Beta(2,18)
+      z[:,42] = rand(d_Crate,nsample)
 
   elseif regime_select == 2
     # define preset regime: High initial TFP growth vs. Low initial TFP growth
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
 
     # Initial TFP growth rate (12, by region) - gy0 - plus/minus 3 sd
     z[:,1:12] = [gy0M' + gy0sd'.*3; gy0M' - gy0sd'.*3]
@@ -114,8 +121,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 3
     # define preset regime: High initial decarbonization rate vs. Low initial decarbonization rate
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
 
     # Initial decarbonization rate (12) - sighisT - plus/minus 3 sd
     z[:,13:24] = [sighisTM' + sighisTsd'.*3; sighisTM' - sighisTsd'.*3]
@@ -123,8 +131,8 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 4
     # define preset regime: High elasticity of income wrt damage vs. Low elasticity of income wrt damage
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
     # Elasticity of income wrt damage - ee - 0.8 and -0.8
     z[:,29] = [0.8,-0.8]
@@ -132,8 +140,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 5
     # define preset regime: High climate sensitivity vs. Low climate sensitivity
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
 
     # Climate sensitivity - xi1 - plus/minus 3 sd
     z[:,26] = [xi1M + xi1sd*3; xi1M - xi1sd*3]
@@ -141,8 +150,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 6
     # define preset regime: High atmosphere to upper ocean transfer coefficient vs. Low atmosphere to upper ocean transfer coefficient
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
 
     # Atmosphere to upper ocean transfer coefficient - plus/minus 3 sd
     z[:,25] = [TrM12M + TrM12sd*3; TrM12M - TrM12sd*3]
@@ -150,8 +160,8 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 7
     # define preset regime: High initial world backstop price vs. Low initial world backstop price
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
     # Initial world backstop price - pw - plus/minus 3 sd
     z[:,28] = [pwM + pwsd*3; pwM - pwsd*3]./1000
@@ -159,8 +169,8 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 8
     # define preset regime: High T7 coefficient vs. Low T7 coefficient
     nsample = 2
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
     # T7 coefficient - psi7 - plus 3sd/0
     z[:,27] = [0.318; 0] # HARDCODING REPLACES: [psi7M + psi7sd*6,max(psi7M - psi7sd*3,0)]
@@ -168,9 +178,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 9
     # define preset regime: Deciles of TFP (all else fixed at means)
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
-    # Change gy0 to go from high to low in deciles
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+    # change gy0 to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
     # d_gy0 = MvNormal(vec(gy0M),diagm(gy0sd)) # generates normal distribution
     QQ = zeros(12,10)
@@ -182,8 +192,8 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 95
     # define preset regime: Deciles of TFP (all else fixed at means)
     nsample = 11 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
     # Change gy0 to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
     # d_gy0 = MvNormal(vec(gy0M),diagm(gy0sd)) # generates normal distribution
@@ -196,8 +206,8 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 10
     # define preset regime: Deciles of decarb rates (all else fixed at means)
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
     # Change sighisT to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
     # d_sighisT = MvNormal(vec(sighisTM),diagm(sighisTsd)) # generates normal distribution
@@ -210,8 +220,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 105
     # define preset regime: Deciles of decarb rates (all else fixed at means)
     nsample = 11 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
     # Change sighisT to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
     # d_sighisT = MvNormal(vec(sighisTM),diagm(sighisTsd)) # generates normal distribution
@@ -224,8 +235,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 11
     # define preset regime: Deciles - High TFP and High decarb vs Low TFP and Low decarb
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
     # Change gy0 and sighisT to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
     QQ = zeros(24,10)
@@ -240,8 +252,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 12
     # define preset regime: Deciles - High TFP and Low decarb vs. Low TFP and High decarb
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
     # Change gy0 and sighisT to go from high to low in deciles
     decs_gy = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile for gy0 (high to low)
     decs_sig = [0.05 0.15 0.25 0.35 0.45 0.55 0.65 0.75 0.85 0.95] # midpoints of each decile for gy0 (low to high)
@@ -257,8 +270,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 13
     # define preset regime: Deciles of elasticity of income wrt damage
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
     # Change ee to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile
     QQ = zeros(1,10)
@@ -268,8 +282,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 14
     # define preset regime: Deciles - High TFP and High ee vs. Low TFP and Low ee
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
     # Change gy0 and sighisT to go from high to low in deciles
     decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile (high to low)
     QQ = zeros(13,10)
@@ -285,8 +300,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   elseif regime_select == 15
     # define preset regime: Deciles - High TFP and Low ee vs. Low TFP and High ee
     nsample = 10 # for deciles
-    z = zeros(nsample,41) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)] # fills up with means before making changes
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
     # Change gy0 and sighisT to go from high to low in deciles
     decs_gy = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] # midpoints of each decile for gy0 (high to low)
     decs_ee = [0.05 0.15 0.25 0.35 0.45 0.55 0.65 0.75 0.85 0.95] # midpoints of each decile for gy0 (low to high)
@@ -304,8 +320,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       # we just use the means for each sample draw except for climate sensitivity.
       decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
       nsample = length(decs)
-      z = zeros(nsample,41) # temp object to hold the random draws
-      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)]
+      z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
       Q = zeros(1,10)
       d_xi1 = Normal(xi1M,xi1sd)
       Q[1,:] = quantile(d_xi1,decs)
@@ -316,8 +333,9 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       # we just use the means for each sample draw
       decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
       nsample = length(decs)
-      z = zeros(nsample,41) # temp object to hold the random draws
-      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample)]
+      z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
       Q = zeros(1,11)
       d_xi1 = Normal(xi1M,xi1sd)
       Q[1,:] = quantile(d_xi1,decs)
@@ -337,12 +355,12 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       for i = 1:nsample
         x_dam[:,i] = ((x[i] - 0.94)/1.28).*stdv./100 + mean_dam # convert to regional uncertainty via standard normal comparison
       end
-      z = zeros(nsample,41) # temp object to hold the random draws
+      z = zeros(nsample,42) # temp object to hold the random draws
       psi2 = zeros(nsample,12)
       for i = 1:nsample
       psi2[i,:] = ((x_dam[:,i] - (0.01*psi1[1,:].*(2.5) + 0.01*psi7M.*(2.5^7)).*(1-x_dam[:,i]))./((2.5^2).*(1-x_dam[:,i])))'.*100
       end
-      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi2]
+      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi2 ones(nsample).*CrateM]
     
     elseif regime_select == 175
       # MC approach with mean damage N(-0.0094,1.28) (Tol, 2012) - full correlation across regions
@@ -358,15 +376,28 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       for i = 1:nsample
         x_dam[:,i] = ((x[i] - 0.94)/1.28).*stdv./100 + mean_dam # convert to regional uncertainty via standard normal comparison
       end
-      z = zeros(nsample,41) # temp object to hold the random draws
+      z = zeros(nsample,42) # temp object to hold the random draws
       psi2 = zeros(nsample,12)
       for i = 1:nsample
       psi2[i,:] = ((x_dam[:,i] - (0.01*psi1[1,:].*(2.5) + 0.01*psi7M.*(2.5^7)).*(1-x_dam[:,i]))./((2.5^2).*(1-x_dam[:,i]))).*100
       end
-      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi2]
+      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi2 ones(nsample).*CrateM]
+ 
+  elseif regime_select == 18
+    # beta distribution for Crate, Beta(2,18)
+    nsample = 10
+    z = zeros(nsample,42)
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] 
+    d_Crate = Beta(2,18)
+    Q = zeros(1,10)
+    Q[1,:] = quantile(d_Crate,decs)
+    z[:,42] = Q'
+  
+  
   end
 
-  DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29],z[:,30:end])
+  DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29],z[:,30:41],z[:,42])
 
   ##################################################################################################################################################################
   # DEEPrandP can now be used along with certainPARAMETERS to generate the full arrays of exogenous parameters.
@@ -460,13 +491,13 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
   tgl = certainPARAMETERS["tgl"][2]
   delA = certainPARAMETERS["delA"][2] # could be randomized
   gamma = certainPARAMETERS["gamm"][2]
-  Crate = certainPARAMETERS["Crate"][2] # could be randomized
+  #Crate = certainPARAMETERS["Crate"][2] # could be randomized
   Cratio = certainPARAMETERS["Cratio"][2] # could be randomized
   y0 = certainPARAMETERS["y0"][2]
 
   # requires the following random parameters
   gy0 = DEEPrandP.gy0
-
+  Crate = DEEPrandP.Crate
   # build time series for TFP
   tfp = tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0,nsample)
 
