@@ -86,7 +86,7 @@ function tfactorp(A0,gy0,tgl,delA,gamma,Crate,Cratio,y0,nsample)
   k = (1-Crate).^(0:T-3)'
   kR = zeros(nsample,I-1,T-2)
   for i = 1:nsample
-    kR[i,:,:] = Crate*(1-gamma)*0.1*(fac[i,:]''*k)
+    kR[i,:,:] = Crate[i].*(1-gamma)*0.1*(fac[i,:]*k[i,:]')
   end
   gtUS_ = permutedims(cat(3,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS,gtUS),[1 3 2]) # adds third dimension to gtUS (manual at the moment since I-1 = 11 is fixed)
   gtR = gtUS_ + kR
@@ -499,6 +499,7 @@ type Deep
   pw
   ee
   psi2
+  Crate
 end
 
 #Region Labels
