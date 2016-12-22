@@ -71,6 +71,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
 
   elseif regime_select == 1
       # total randomization
+      nsample=100
       z = zeros(nsample,42) # temp object to hold the random draws
 
       # Initial TFP growth rate (12, by region) - gy0 - NO RANDOMIZATION
@@ -103,7 +104,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
 
       # quadratic damage coefficients (not random here yet)
       z[:,30:41] = repmat(psi1[2,:]',nsample)
-    
+
       # Crate: Beta distribution with alpha=2 and beta=18 (mean 0.1)
       d_Crate = Beta(2,18)
       z[:,42] = rand(d_Crate,nsample)
@@ -361,7 +362,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       psi2[i,:] = ((x_dam[:,i] - (0.01*psi1[1,:].*(2.5) + 0.01*psi7M.*(2.5^7)).*(1-x_dam[:,i]))./((2.5^2).*(1-x_dam[:,i])))'.*100
       end
       z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi2 ones(nsample).*CrateM]
-    
+
     elseif regime_select == 175
       # MC approach with mean damage N(-0.0094,1.28) (Tol, 2012) - full correlation across regions
       srand(123) # Setting the seed
@@ -369,7 +370,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       stdv = vec(cv.*mean_dam.*100) # all regions have the same coefficient of variation
       d = Normal(0.94,1.28) # global distribution of % damages
       nsample = 11
-      decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05] 
+      decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
       # x = rand(d,nsample)
       x = quantile(d,decs)
       x_dam = zeros(12,nsample)
@@ -382,19 +383,19 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       psi2[i,:] = ((x_dam[:,i] - (0.01*psi1[1,:].*(2.5) + 0.01*psi7M.*(2.5^7)).*(1-x_dam[:,i]))./((2.5^2).*(1-x_dam[:,i]))).*100
       end
       z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi2 ones(nsample).*CrateM]
- 
+
   elseif regime_select == 18
     # beta distribution for Crate, Beta(2,18)
     nsample = 10
     z = zeros(nsample,42)
     z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
-    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05] 
+    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
     d_Crate = Beta(2,18)
     Q = zeros(1,10)
     Q[1,:] = quantile(d_Crate,decs)
     z[:,42] = Q'
-  
-  
+
+
   end
 
   DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29],z[:,30:41],z[:,42])

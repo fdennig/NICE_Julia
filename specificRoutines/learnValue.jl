@@ -20,14 +20,15 @@ eta = 2 # inequality aversion/time smoothing parameter (applied to per capita co
 nu = 2 # risk aversion parameter (applied over random draws)
 eeM = 1 # elasticity of damage with respect to income
 models = ["NICE" "DICE"]
-regimes = [9, 10, 16, 17]
-
+regimes = [9, 10, 16, 17, 18]
+lmv = [0 3 tm]
 #compute optima
-# pre allocate the dataframes
+# pre allocate the dataframes and results array
 consN = DataFrame(State = Int[], Region = String[], Year = Int[], tax = Float64[], cq1 = Float64[], cq2 = Float64[], cq3 = Float64[], cq4 = Float64[], cq5 = Float64[], K = Float64[], E = Float64[], mu = Float64[], lam = Float64[], D = Float64[], Y = Float64[], L = Float64[], Regime = Float64[], LearnP = Float64[])
 consD = DataFrame(State = Int[], Region = String[], Year = Int[], tax = Float64[], c = Float64[], K = Float64[], E = Float64[], mu = Float64[], lam = Float64[], D = Float64[], Y = Float64[], L = Float64[], Regime = Float64[], LearnP = Float64[])
+resArray = Array{Results}(2,5,3)
 for k=1:2 # loop over models NICE and DICE
-  for j = 1:4 # loop over regimes 9, 10, 16, 17
+  for j = 1:5 # loop over regimes 9, 10, 16, 17
   # optimisation preliminaries
     PP = createP(regimes[j]) # createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]', gy0sd = ones(12)*0.0059, sighisTM = dparam_i["sighisT"][2]', sighisTsd = ones(12)*0.0064, xi1M = 3, xi1sd = 1.4, eeM = 1, eesd = 0.3)
     nsample=length(PP)
@@ -36,8 +37,8 @@ for k=1:2 # loop over models NICE and DICE
       pb[ii,:,:] = PP[ii].pb'
     end
     idims = Int(max(round(nsample/2),1)) # bifurcates the random draws into two subsets
-    for i = [0 3 tm] # loop over learning period
-      lm = i
+    for i = 1:3
+      lm=lmv[i] # loop over learning period
       tax_length = 2*tm - lm
       global count = 0 # keep track of number of iterations
   # Define function to be maximized (requires special format for NLopt package)
@@ -79,6 +80,7 @@ for k=1:2 # loop over models NICE and DICE
 
       # create Results variable
       res = Results(regimes[j],nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
+      resArray[k,j,i] = res
       # create dataframe of period by region by state data
       dataP = FrameFromResults(res, Tm, nsample, Regions, idims)
       dataP[:Regime] = ones(size(dataP)[1])*regimes[j]
@@ -93,92 +95,25 @@ for k=1:2 # loop over models NICE and DICE
   end
 end
 
-#Compute value of learning: load csvs below if optima were not just calculated
-    # consN = readtable("$(pwd())/Outputs/valueOfLearning/consN.csv")
-    # consD = readtable("$(pwd())/Outputs/valueOfLearning/consD.csv")
-#preallocate dataframe
-learn = DataFrame(Regime = repmat(regimes,4), Model = [repmat(["NICE"],8);repmat(["DICE"],8)], Learn1=repmat(repmat([2015 2045],4)[:],2), Learn2 = repmat(repmat([2045 2015+10*tm],4)[:],2))
 
-#the NICE runs
-resulN = zeros(4,2)
-consN[:R] = (1/(1+rho)).^((consN[:Year]-2005)/10)
-indi = 1
-byRegime = groupby(consN,:Regime)
-for byR in byRegime
-  # byR = byRegime[1]
-  Z = groupby(byR,:LearnP)
-  Y1 = sum(
-          mean([Z[2][x].^(1-eta)./(1-eta) for x in [:cq1,:cq2,:cq3,:cq4,:cq5]])
-          .*Z[2][:L].*Z[2][:R]
-          )
-  Y2 = sum(
-          mean([Z[3][x].^(1-eta)./(1-eta) for x in [:cq1,:cq2,:cq3,:cq4,:cq5]])
-          .*Z[3][:L].*Z[3][:R]
-          )
-  function Dwel1(lambda)
-    Lam = ones(size(Z[1])[1])
-    Lam[Z[1][:Year].==2005] = lambda
-    X = sum(
-            mean([(Z[1][x].*Lam).^(1-eta)./(1-eta) for x in [:cq1,:cq2,:cq3,:cq4,:cq5]])
-            .*Z[1][:L].*Z[1][:R]
-            )
-    X-Y1
+
+learnN = zeros(5,2)
+for j=1:5
+  for k=1:2
+    x = resArray[1,j,k].EWelfare - resArray[1,j,k+1].EWelfare
+    learnN[j,k] = (1+(1-eta)*x/sum(repmat(resArray[1,j,k].PP[1].L[1,:]/5,1,5).*resArray[1,j,k].c[1,:,:,1].^(1-eta)))^(1/(1-eta))-1
   end
-  function Dwel2(lambda)
-    Lam = ones(size(Z[1])[1])
-    Lam[Z[1][:Year].==2005] = lambda
-    X = sum(
-            mean([(Z[2][x].*Lam).^(1-eta)./(1-eta) for x in [:cq1,:cq2,:cq3,:cq4,:cq5]])
-            .*Z[2][:L].*Z[2][:R]
-            )
-    X-Y2
-  end
-  resulN[indi,1] = (fzero(Dwel1,1)-1)*100
-  resulN[indi,2] = (fzero(Dwel2,1)-1)*100
-  indi+=1
 end
-
-#the DICE runs
-resulD = zeros(4,2)
-consD[:R] = (1/(1+rho)).^((consD[:Year]-2005)/10)
-indi=1
-byRegime = groupby(consD,:Regime)
-for byR in byRegime
-  # byR = byRegime[1]
-  Z = groupby(byR,:LearnP)
-  Y1 =  sum(
-            by(Z[2],[:Year,:State],
-              d->mean(d[:c].*d[:L]).^(1-eta)./(1-eta).*d[:R]
-              )[:x1]
-            )
-  Y2 = sum(
-            by(Z[3],[:Year,:State],
-              d->mean(d[:c].*d[:L]).^(1-eta)./(1-eta).*d[:R]
-              )[:x1]
-            )
-  function Dwel1(lambda)
-    Xdis =  by(Z[1],[:Year,:State],
-              d->mean(d[:c].*d[:L]).^(1-eta)./(1-eta).*d[:R]
-              )
-    Xdis[Xdis[:Year].==2005,:x1]*=lambda
-    X = sum(Xdis[:x1])
-    X-Y1
+learnD = zeros(5,2)
+for j=1:5
+  for k=1:2
+    x = resArray[2,j,k].EWelfare - resArray[2,j,k+1].EWelfare
+    learnD[j,k] = (1+(1-eta)*x/sum(repmat(resArray[1,j,k].PP[1].L[1,:]/5,1,5).*resArray[1,j,k].c[1,:,:,1].^(1-eta)))^(1/(1-eta))-1
   end
-  function Dwel2(lambda)
-    Xdis =  by(Z[2],[:Year,:State],
-              d->mean(d[:c].*d[:L]).^(1-eta)./(1-eta).*d[:R]
-              )
-    Xdis[Xdis[:Year].==2005,:x1]*=lambda
-    X = sum(Xdis[:x1])
-    X-Y2
-  end
-  resulD[indi,1] = (fzero(Dwel1,1.001)-1)*100
-  resulD[indi,2] = (fzero(Dwel2,1.001)-1)*100
-  indi+=1
 end
+learn = DataFrame(Model = repmat(["NICE"; "DICE"]',5,1)[:], Regime = repmat(regimes,2), l2015l2025=[learnN[:,1]; learnD[:,1]], l2024lend = l2015l2025=[learnN[:,2]; learnD[:,2]])
 
-learn[:Value] = [resulN[:];resulD[:]]
-
+save("$(pwd())/Outputs/valueOfLearning/resArray.jld", "resArray", resArray)
 writetable("$(pwd())/Outputs/valueOfLearning/consD.csv", consD)
 writetable("$(pwd())/Outputs/valueOfLearning/consN.csv", consN)
 writetable("$(pwd())/Outputs/valueOfLearning/valueOfLearning.csv",learn)
