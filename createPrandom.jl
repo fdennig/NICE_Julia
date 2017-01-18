@@ -343,6 +343,32 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       QQ = Q'
       z[:,26] = QQ
 
+  elseif regime_select == 161
+    # loglogistic truncated at 0.75, with mean 3 and standard deviation 1.4
+    decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
+    nsample = length(decs)
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM] # fills up with means before making changes
+    Q = zeros(1,10)
+    d_log_xi1 = Logistic(log(2.75),1/(4.35))
+    d_log_x1_t = Truncated(d_log_xi1, 0.75, Inf)
+    Q[1,:] = exp(quantile(d_log_x1_t,decs))
+    QQ = Q'
+    z[:,26] = QQ
+
+  elseif regime_select == 1615
+    # loglogistic truncated at 0.75, with mean 3 and standard deviation 1.4
+    decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
+    nsample = length(decs)
+    z = zeros(nsample,42) # temp object to hold the random draws
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M ones(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM] # fills up with means before making changes
+    Q = zeros(1,11)
+    d_log_xi1 = Logistic(log(2.75),1/(4.35))
+    d_log_x1_t = Truncated(d_log_xi1, 0.75, Inf)
+    Q[1,:] = exp(quantile(d_log_x1_t,decs))
+    QQ = Q'
+    z[:,26] = QQ
+
     elseif regime_select == 17
     # MC approach with mean damage N(-0.0094,1.28) (Tol, 2012) - full correlation across regions
       srand(123) # Setting the seed
@@ -395,7 +421,24 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
     Q[1,:] = quantile(d_Crate,decs)
     z[:,42] = Q'
 
-
+  elseif regime_select == 19
+    srand(123) # Setting the seed
+    cv = 1.28/0.94
+    stdv = vec(cv.*mean_dam.*100) # all regions have the same coefficient of variation
+    d = Normal(0.94,1.28) # global distribution of % damages
+    nsample = 100
+    x = rand(d,nsample)
+    #   x = quantile(d,[0.05,0.15,0.25,0.35,0.45,0.55,0.65,0.75,0.85,0.95])
+    x_dam = zeros(12,nsample)
+    for i = 1:nsample
+      x_dam[:,i] = ((x[i] - 0.94)/1.28).*stdv./100 + mean_dam # convert to regional uncertainty via standard normal comparison
+    end
+    z = zeros(nsample,42) # temp object to hold the random draws
+    psi1R = zeros(nsample,12)
+    for i = 1:nsample
+    psi1R[i,:] = ((x_dam[:,i] - (0.01*psi1[2,:].*(2.5^2) + 0.01*psi7M.*(2.5^7)).*(1-x_dam[:,i]))./((2.5).*(1-x_dam[:,i])))'.*100
+    end
+    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi1R ones(nsample).*CrateM]
   end
 
   DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29],z[:,30:41],z[:,42])
@@ -557,10 +600,18 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
 
   # build psi
   psi_ = zeros(3,12,nsample) # note order of dimensions to check easily
-  for i = 1:nsample
-    psi_[1,:,i] = psi1[1,:]
-    psi_[2,:,i] = DEEPrandP.psi2[i,:]
-    psi_[3,:,i] = repmat(psi7,1,12)[i,:]
+  if regime_select == 19
+    for i = 1:nsample
+      psi_[1,:,i] = DEEPrandP.psi2[i,:]
+      psi_[2,:,i] = psi1[2,:]
+      psi_[3,:,i] = repmat(psi7,1,12)[i,:]
+    end
+  else
+    for i = 1:nsample
+      psi_[1,:,i] = psi1[1,:]
+      psi_[2,:,i] = DEEPrandP.psi2[i,:]
+      psi_[3,:,i] = repmat(psi7,1,12)[i,:]
+    end
   end
 
   psi = permutedims(psi_,[3 1 2])
