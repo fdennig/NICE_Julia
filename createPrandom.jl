@@ -322,7 +322,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
       nsample = length(decs)
       z = zeros(nsample,42) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
       Q = zeros(1,10)
       d_xi1 = Normal(xi1M,xi1sd)
@@ -335,7 +335,7 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
       decs = [0.95 0.85 0.75 0.65 0.55 0.5 0.45 0.35 0.25 0.15 0.05]
       nsample = length(decs)
       z = zeros(nsample,42) # temp object to hold the random draws
-    z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
 
       Q = zeros(1,11)
       d_xi1 = Normal(xi1M,xi1sd)
@@ -439,6 +439,19 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
     psi1R[i,:] = ((x_dam[:,i] - (0.01*psi1[2,:].*(2.5^2) + 0.01*psi7M.*(2.5^7)).*(1-x_dam[:,i]))./((2.5).*(1-x_dam[:,i])))'.*100
     end
     z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM psi1R ones(nsample).*CrateM]
+
+  elseif regime_select == 20
+      # we just use the means for each sample draw except for climate sensitivity.
+      decs = [0.95 0.85 0.75 0.65 0.55 0.45 0.35 0.25 0.15 0.05]
+      nsample = length(decs)
+      z = zeros(nsample,42) # temp object to hold the random draws
+      z = [repmat(gy0M',nsample) repmat(sighisTM',nsample) ones(nsample).*TrM12M ones(nsample).*xi1M zeros(nsample).*psi7M ones(nsample).*(pwM/1000) ones(nsample).*eeM repmat(psi1[2,:]',nsample) ones(nsample).*CrateM]
+
+      Q = zeros(1,nsample)
+      ee = Normal(eeM,eesd)
+      Q[1,:] = quantile(ee,decs)
+      QQ = Q'
+      z[:,29] = QQ
   end
 
   DEEPrandP = Deep(z[:,1:12],z[:,13:24],z[:,25].*100,z[:,26],z[:,27],z[:,28],z[:,29],z[:,30:41],z[:,42])
