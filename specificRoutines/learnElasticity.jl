@@ -99,8 +99,8 @@ for i=1:2 #(i, lm) in enumerate(lmv)
   end
 end
 
-learn = DataFrame(Mean = repmat(eeMv',3), SD = repmat(eesdv,3)[:], l2015lto2045=learnN[1,:,:][:], l2045tolend =learnN[2,:,2][:])
-# writetable("$(pwd())/Outputs/valueOfLearning/valueOfLearningNICE2.csv",learn)
+learn = DataFrame(Mean = repmat(eeMv',3)[:], SD = repmat(eesdv,3)[:], l2015lto2045=learnN[1,:,:][:], l2045tolend =learnN[2,:,:][:])
+writetable("$(pwd())/Outputs/valueOfLearning/valueOfLearningElasticity.csv",learn)
 # save("$(pwd())/Outputs/valueOfLearning/resArrayNICE2.jld", "resArray", resArray)
 # learnD = zeros(5,2)
 # for j=1:5
