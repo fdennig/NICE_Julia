@@ -572,6 +572,7 @@ type Results10
   eta
   nu
   PP
+  optiRet
 end
 
 function FrameFromResults(res, Tm, nsample, Regions, idims)

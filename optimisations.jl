@@ -51,12 +51,16 @@ function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0,
   n = nsample*tm - (nsample-1)*lm
   global count = 0 # keep track of number of iterations
   # Define function to be maximized (requires special format for NLopt package)
-  cuts = tm:(tm-lm):n
   function welfaremax(x,grad) # x is the tax vector, grad is the gradient (unspecified here since we have no way of computing it)
     global taxes = zeros(tm,nsample) #produces the nsample different tax paths from x
-    taxes[:,1] = x[1:tm]
-    for jj=1:(nsample-1)
-      taxes[:,jj+1] = [x[1:lm];x[cuts[jj]+1:cuts[jj+1]]]
+    if lm<tm
+      cuts = tm:(tm-lm):n
+      taxes[:,1] = x[1:tm]
+      for jj=1:(nsample-1)
+        taxes[:,jj+1] = [x[1:lm];x[cuts[jj]+1:cuts[jj+1]]]
+      end
+    else
+      taxes = repmat(x,1,nsample)
     end
     WW = tax2expectedwelfare10(taxes,PP,rho,eta,nu,Tm,tm,lm,model="$(model)")[1] #change to model="RICE" or "DICE" for different levels of aggregation
     count += 1
@@ -83,10 +87,11 @@ function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0,
   # Set relative tolerance for the tax vector choice - vs. ftol for function value?
   ftol_rel!(opt,0.000000000005)
   #Initial guess: RANDOMIZED
-  init = Array{Float64}(n)
-  for k=1:n
-    init[k]=rand(Uniform(0,[ub_lm;ub_n[:]][k]),1)[1]
-  end
+  # init = Array{Float64}(n)
+  # for k=1:n
+  #   init[k]=rand(Uniform(0,[ub_lm;ub_n[:]][k]),1)[1]
+  # end
+  init = [ub_lm;ub_n[:]]*0.8
   # Optimize!
   (expected_welfare,tax_vector,ret) = optimize(opt, init)
 
@@ -99,5 +104,5 @@ function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0,
     TAXES[2:(tm+1),jj] = taxes[:,jj]
   end
   # create Results variable
-  res = Results10(regime,nsample,Tm,tm,lm,Regions,TAXES,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
+  res = Results10(regime,nsample,Tm,tm,lm,Regions,TAXES,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP,ret)
 end
