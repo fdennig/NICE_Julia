@@ -45,7 +45,7 @@ function optimiseNICER(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0, m
   res = Results(regime,nsample,Tm,tm,lm,Regions,taxes_1,taxes_2,expected_welfare,c,K,T,E,M,mu,lam,D,AD,Y,Q,rho,eta,nu,PP)
 end
 
-function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0, model="NICE", Regions=["USA", "OECD Europe", "Japan", "Russia", "Non-Russia Eurasia", "China", "India", "Middle East", "Africa", "Latin America", "OHI", "Other non-OECD Asia"]')
+function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0, model="NICE", inite = 0, Regions=["USA", "OECD Europe", "Japan", "Russia", "Non-Russia Eurasia", "China", "India", "Middle East", "Africa", "Latin America", "OHI", "Other non-OECD Asia"]')
   nsample=length(PP)
   #length of argument
   n = nsample*tm - (nsample-1)*lm
@@ -91,7 +91,12 @@ function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0,
   # for k=1:n
   #   init[k]=rand(Uniform(0,[ub_lm;ub_n[:]][k]),1)[1]
   # end
-  init = [ub_lm;ub_n[:]]*0.8
+  if inite == 0
+    init = [ub_lm;ub_n[:]]*0.8
+  else
+    init = inite
+  end
+  print(typeof(init))
   # Optimize!
   (expected_welfare,tax_vector,ret) = optimize(opt, init)
 
