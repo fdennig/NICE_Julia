@@ -427,8 +427,8 @@ function createP(regime_select; backstop_same = "Y", gy0M = dparam_i["gy0"][2]',
     stdv = vec(cv.*mean_dam.*100) # all regions have the same coefficient of variation
     d = Normal(0.94,1.28) # global distribution of % damages
     nsample = 10
-    x = rand(d,nsample)
-    #   x = quantile(d,[0.05,0.15,0.25,0.35,0.45,0.55,0.65,0.75,0.85,0.95])
+    # x = rand(d,nsample)
+    x = quantile(d,[0.05,0.15,0.25,0.35,0.45,0.55,0.65,0.75,0.85,0.95])
     x_dam = zeros(12,nsample)
     for i = 1:nsample
       x_dam[:,i] = ((x[i] - 0.94)/1.28).*stdv./100 + mean_dam # convert to regional uncertainty via standard normal comparison
