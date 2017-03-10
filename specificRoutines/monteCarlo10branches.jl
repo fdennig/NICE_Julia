@@ -45,4 +45,4 @@ for i=1:4
     p[i,j] = plot(melt(df, :x), x = :x, y = :value, color = :variable, Geom.line, Geom.point,Guide.title("Regime $(REGIME[i])"))
   end
 end
-draw(PDF("$(pwd())/Outputs/valueOfLearning/tenBranches2.pdf", 20inch, 12inch), vstack(hstack(p[1,1],p[2,1],p[3,1],p[4,1]),hstack(p[1,2],p[2,2],p[3,2],p[4,2]),hstack(p[1,3],p[2,3],p[3,3],p[4,3])))
+draw(PDF("$(pwd())/Outputs/valueOfLearning/tenBranches3.pdf", 20inch, 12inch), vstack(hstack(p[1,1],p[2,1],p[3,1],p[4,1]),hstack(p[1,2],p[2,2],p[3,2],p[4,2]),hstack(p[1,3],p[2,3],p[3,3],p[4,3])))
