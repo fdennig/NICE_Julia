@@ -85,8 +85,8 @@ function optimiseNICER10(PP, regime; rho=0.015, eta=2, nu=2, Tm=32, tm=31, lm=0,
   # Set maximization
   max_objective!(opt, welfaremax)
   # Set relative tolerance for the tax vector choice - vs. ftol for function value?
-  ftol_rel!(opt,0.00000000000005)
-  xtol_rel!(opt,1e-10)
+  ftol_rel!(opt,0.00000000000000005)
+  xtol_rel!(opt,1e-13)
   #Initial guess: RANDOMIZED
   # init = Array{Float64}(n)
   # for k=1:n
